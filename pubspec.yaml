@@ -1,0 +1,59 @@
+name: snap_desktop
+description: "SNAP — Universal Clipboard Vault for macOS and Windows"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Navigation
+  go_router: ^15.1.2
+
+  # HTTP client
+  dio: ^5.8.0+1
+
+  # Secure storage (Keychain / DPAPI)
+  flutter_secure_storage: ^9.2.4
+
+  # Local database
+  sqflite_common_ffi: ^2.3.4+4
+  path: ^1.9.1
+  path_provider: ^2.1.5
+
+  # Encryption (AES-256-GCM + PBKDF2)
+  pointycastle: ^3.9.1
+  crypto: ^3.0.6
+
+  # Clipboard watching
+  clipboard_watcher: ^0.3.0
+
+  # System tray
+  tray_manager: ^0.2.3
+
+  # Window management
+  window_manager: ^0.4.3
+
+  # Utilities
+  uuid: ^4.5.1
+  shared_preferences: ^2.5.3
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  riverpod_generator: ^2.6.2
+  build_runner: ^2.4.15
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
