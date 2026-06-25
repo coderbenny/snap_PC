@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -9,15 +11,22 @@ import 'core/providers.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Desktop SQLite
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
-  // Database — initialised once here, injected into the widget tree via override.
   final db = DatabaseService();
   await db.initialize();
 
-  // Window setup
+  // Restore session from Keychain / DPAPI if available.
+  final storage = SecureStorageService();
+  Uint8List? initialKey;
+  if (await storage.hasSession()) {
+    final keyB64 = await storage.getEncryptionKey();
+    if (keyB64 != null) {
+      initialKey = EncryptionService.keyFromBase64(keyB64);
+    }
+  }
+
   await windowManager.ensureInitialized();
   const windowOptions = WindowOptions(
     size: Size(960, 660),
@@ -36,6 +45,9 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         databaseServiceProvider.overrideWithValue(db),
+        initialRouteProvider.overrideWithValue(initialKey != null ? '/' : '/login'),
+        if (initialKey != null)
+          encryptionKeyProvider.overrideWith((_) => initialKey!),
       ],
       child: const SnapApp(),
     ),

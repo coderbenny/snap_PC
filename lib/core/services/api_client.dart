@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -10,7 +12,12 @@ import 'secure_storage_service.dart';
 class AuthTokens {
   final String accessToken;
   final String refreshToken;
-  const AuthTokens({required this.accessToken, required this.refreshToken});
+  final String userId;
+  const AuthTokens({
+    required this.accessToken,
+    required this.refreshToken,
+    required this.userId,
+  });
 }
 
 class PullResult {
@@ -114,10 +121,23 @@ class ApiClient {
       'email': email,
       'password': password,
     });
+    final at = res.data['access_token'] as String;
     return AuthTokens(
-      accessToken: res.data['access_token'] as String,
+      accessToken: at,
       refreshToken: res.data['refresh_token'] as String,
+      userId: _jwtSub(at),
     );
+  }
+
+  // Extracts the `sub` claim from a JWT without a full JWT library.
+  static String _jwtSub(String token) {
+    final parts = token.split('.');
+    if (parts.length != 3) throw const FormatException('Malformed JWT');
+    var payload = parts[1];
+    payload += '=' * ((4 - payload.length % 4) % 4);
+    final bytes = base64Url.decode(payload);
+    final map = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+    return map['sub'] as String;
   }
 
   Future<String> register(String email, String password) async {
