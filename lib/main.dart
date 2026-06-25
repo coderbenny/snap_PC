@@ -4,13 +4,18 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app.dart';
+import 'core/providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Desktop SQLite (required on macOS/Windows — not available on mobile)
+  // Desktop SQLite
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
+
+  // Database — initialised once here, injected into the widget tree via override.
+  final db = DatabaseService();
+  await db.initialize();
 
   // Window setup
   await windowManager.ensureInitialized();
@@ -27,5 +32,12 @@ Future<void> main() async {
     await windowManager.focus();
   });
 
-  runApp(const ProviderScope(child: SnapApp()));
+  runApp(
+    ProviderScope(
+      overrides: [
+        databaseServiceProvider.overrideWithValue(db),
+      ],
+      child: const SnapApp(),
+    ),
+  );
 }
