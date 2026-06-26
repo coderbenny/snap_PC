@@ -62,11 +62,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   String _parseError(Exception e) {
+    debugPrint('[Login] error: $e');
     final msg = e.toString().toLowerCase();
-    if (msg.contains('401') || msg.contains('invalid')) {
+    if (msg.contains('401') || msg.contains('invalid credentials') ||
+        msg.contains('invalid email or password')) {
       return 'Invalid email or password';
     }
-    if (msg.contains('connection') || msg.contains('socket')) {
+    if (msg.contains('connection') || msg.contains('socket') ||
+        msg.contains('network')) {
       return 'Cannot reach server — check your connection';
     }
     return 'Sign-in failed — please try again';
@@ -218,11 +221,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   String _parseError(Exception e) {
+    debugPrint('[Register] error: $e');
     final msg = e.toString().toLowerCase();
     if (msg.contains('409') || msg.contains('already')) {
       return 'An account with this email already exists';
     }
-    if (msg.contains('connection') || msg.contains('socket')) {
+    if (msg.contains('connection') || msg.contains('socket') ||
+        msg.contains('network')) {
       return 'Cannot reach server — check your connection';
     }
     return 'Registration failed — please try again';

@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:math';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:pointycastle/export.dart';
 
 import '../constants/app_constants.dart';
@@ -38,8 +39,9 @@ class EncryptionService {
   }
 
   /// Runs [deriveKey] in a background isolate so the UI stays responsive.
+  /// Uses Isolate.run() with a closure so no custom sendable class is needed.
   static Future<Uint8List> deriveKeyAsync(String password, String userId) =>
-      compute(_deriveKeyEntry, _DeriveArgs(password, userId));
+      Isolate.run(() => deriveKey(password, userId));
 
   // ── Encrypt / decrypt ──────────────────────────────────────────────────────
 
@@ -85,12 +87,3 @@ class EncryptionService {
   }
 }
 
-// Top-level helpers for compute() — must not be closures.
-class _DeriveArgs {
-  final String password;
-  final String userId;
-  const _DeriveArgs(this.password, this.userId);
-}
-
-Uint8List _deriveKeyEntry(_DeriveArgs args) =>
-    EncryptionService.deriveKey(args.password, args.userId);
