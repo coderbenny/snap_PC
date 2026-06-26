@@ -46,13 +46,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final key = await EncryptionService.deriveKeyAsync(
           _passwordCtrl.text, tokens.userId);
 
-      final storage = ref.read(secureStorageProvider);
-      await storage.saveAccessToken(tokens.accessToken);
-      await storage.saveRefreshToken(tokens.refreshToken);
-      await storage.saveUserId(tokens.userId);
-      await storage.saveEncryptionKey(EncryptionService.keyToBase64(key));
+      await ref.read(secureStorageProvider).saveSession(
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            userId: tokens.userId,
+            encryptionKey: EncryptionService.keyToBase64(key),
+          );
 
-      // Setting the key fires authListenableProvider → GoRouter redirect to '/'.
       ref.read(encryptionKeyProvider.notifier).state = key;
     } on Exception catch (e) {
       setState(() => _error = _parseError(e));
@@ -206,11 +206,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       final key = await EncryptionService.deriveKeyAsync(
           _passwordCtrl.text, userId);
 
-      final storage = ref.read(secureStorageProvider);
-      await storage.saveAccessToken(tokens.accessToken);
-      await storage.saveRefreshToken(tokens.refreshToken);
-      await storage.saveUserId(userId);
-      await storage.saveEncryptionKey(EncryptionService.keyToBase64(key));
+      await ref.read(secureStorageProvider).saveSession(
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            userId: userId,
+            encryptionKey: EncryptionService.keyToBase64(key),
+          );
 
       ref.read(encryptionKeyProvider.notifier).state = key;
     } on Exception catch (e) {

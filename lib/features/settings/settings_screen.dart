@@ -1,19 +1,39 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/providers.dart';
 import '../clipboard/clipboard_notifier.dart';
 
-// ── Local preferences provider ─────────────────────────────────────────────
+// ── Providers ──────────────────────────────────────────────────────────────
+
+final _activeSectionProvider = StateProvider<int>((_) => 0);
 
 final _syncEnabledProvider = StateProvider<bool>((ref) {
   final prefs = ref.read(sharedPreferencesProvider);
   return prefs.getBool(AppConstants.kSyncEnabled) ?? true;
 });
+
+// ── Section definitions ────────────────────────────────────────────────────
+
+const _sections = [
+  _SectionMeta('Account', Icons.person_outline),
+  _SectionMeta('Preferences', Icons.tune_outlined),
+  _SectionMeta('Data', Icons.storage_outlined),
+  _SectionMeta('Danger Zone', Icons.warning_amber_outlined, isDestructive: true),
+];
+
+class _SectionMeta {
+  final String label;
+  final IconData icon;
+  final bool isDestructive;
+  const _SectionMeta(this.label, this.icon, {this.isDestructive = false});
+}
 
 // ── Screen ─────────────────────────────────────────────────────────────────
 
@@ -26,6 +46,7 @@ class SettingsScreen extends ConsumerWidget {
       body: Row(
         children: [
           _SettingsSidebar(),
+          const VerticalDivider(width: 1),
           const Expanded(child: _SettingsContent()),
         ],
       ),
@@ -35,20 +56,20 @@ class SettingsScreen extends ConsumerWidget {
 
 // ── Sidebar ────────────────────────────────────────────────────────────────
 
-class _SettingsSidebar extends StatelessWidget {
+class _SettingsSidebar extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final active = ref.watch(_activeSectionProvider);
     final theme = Theme.of(context);
+
     return Container(
       width: 220,
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        border: Border(right: BorderSide(color: theme.dividerColor)),
-      ),
+      color: theme.cardColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ListTile(
+            dense: true,
             leading: const Icon(Icons.arrow_back, size: 18),
             title: const Text('Back', style: TextStyle(fontSize: 13)),
             onTap: () => context.go('/'),
@@ -56,14 +77,21 @@ class _SettingsSidebar extends StatelessWidget {
           const Divider(height: 1),
           const SizedBox(height: 8),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text('Settings',
-                style: theme.textTheme.labelSmall
-                    ?.copyWith(letterSpacing: 0.5)),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Text(
+              'SETTINGS',
+              style: theme.textTheme.labelSmall?.copyWith(
+                letterSpacing: 1.2,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
-          _SidebarItem(label: 'Account', icon: Icons.person_outline),
-          _SidebarItem(label: 'Preferences', icon: Icons.tune_outlined),
-          _SidebarItem(label: 'Data', icon: Icons.storage_outlined),
+          for (int i = 0; i < _sections.length; i++)
+            _SidebarItem(
+              meta: _sections[i],
+              selected: active == i,
+              onTap: () => ref.read(_activeSectionProvider.notifier).state = i,
+            ),
         ],
       ),
     );
@@ -71,18 +99,55 @@ class _SettingsSidebar extends StatelessWidget {
 }
 
 class _SidebarItem extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  const _SidebarItem({required this.label, required this.icon});
+  final _SectionMeta meta;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SidebarItem({
+    required this.meta,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      leading: Icon(icon, size: 17,
-          color: Theme.of(context).colorScheme.onSurfaceVariant),
-      title: Text(label, style: const TextStyle(fontSize: 13)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+    final scheme = Theme.of(context).colorScheme;
+    final color = meta.isDestructive
+        ? Colors.red.shade400
+        : selected
+            ? scheme.primary
+            : scheme.onSurfaceVariant;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      child: Material(
+        color: selected
+            ? scheme.primary.withValues(alpha: 0.12)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+            child: Row(
+              children: [
+                Icon(meta.icon, size: 17, color: color),
+                const SizedBox(width: 10),
+                Text(
+                  meta.label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight:
+                        selected ? FontWeight.w600 : FontWeight.normal,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -94,116 +159,198 @@ class _SettingsContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(36),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionHeader(context, 'Account'),
-            const SizedBox(height: 12),
-            const _AccountCard(),
-            const SizedBox(height: 32),
-            _sectionHeader(context, 'Preferences'),
-            const SizedBox(height: 12),
-            const _PreferencesCard(),
-            const SizedBox(height: 32),
-            _sectionHeader(context, 'Data'),
-            const SizedBox(height: 12),
-            const _DataCard(),
-            const SizedBox(height: 32),
-            _sectionHeader(context, 'Danger Zone'),
-            const SizedBox(height: 12),
-            const _DangerCard(),
-          ],
+    final active = ref.watch(_activeSectionProvider);
+
+    final (title, body) = switch (active) {
+      0 => ('Account', const _AccountSection()),
+      1 => ('Preferences', const _PreferencesSection()),
+      2 => ('Data', const _DataSection()),
+      3 => ('Danger Zone', const _DangerSection()),
+      _ => ('Account', const _AccountSection()),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(32, 28, 32, 0),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
         ),
-      ),
+        const Divider(height: 24),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(32, 8, 32, 32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: body,
+            ),
+          ),
+        ),
+      ],
     );
   }
-
-  Widget _sectionHeader(BuildContext context, String label) => Text(
-        label,
-        style: Theme.of(context)
-            .textTheme
-            .titleSmall
-            ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-      );
 }
 
-// ── Account card ───────────────────────────────────────────────────────────
+// ── Account section ────────────────────────────────────────────────────────
 
-class _AccountCard extends ConsumerWidget {
-  const _AccountCard();
+class _AccountSection extends ConsumerWidget {
+  const _AccountSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileProvider);
 
-    return _Card(
-      child: profile.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        error: (e, _) => Text('Could not load profile: $e',
-            style: const TextStyle(color: Colors.white54, fontSize: 13)),
-        data: (data) {
-          final email = data['email'] ?? '—';
-          final plan = data['plan'] ?? 'free';
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return profile.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(48),
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      error: (e, _) => _Card(
+        child: Text(
+          'Could not load profile: $e',
+          style: const TextStyle(color: Colors.white54, fontSize: 13),
+        ),
+      ),
+      data: (data) {
+        final email = data['email'] ?? '—';
+        final plan = data['plan'] ?? 'free';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Card(
+              child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 20,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                    radius: 24,
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.15),
                     child: Text(
                       email.isNotEmpty ? email[0].toUpperCase() : '?',
                       style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w600),
+                        fontSize: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(email,
-                            style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w500)),
-                        const SizedBox(height: 2),
+                        Text(
+                          email,
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 4),
                         _PlanBadge(plan: plan),
                       ],
                     ),
                   ),
                 ],
               ),
-              if (plan == 'free') ...[
-                const SizedBox(height: 16),
-                const Divider(height: 1),
-                const SizedBox(height: 12),
-                Text(
-                  'Upgrade to Pro to enable cross-device sync, unlimited history, and more.',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 16),
+            if (plan == 'free')
+              _Card(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.bolt,
+                            size: 18, color: Colors.amber.shade600),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Upgrade to Pro',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Get unlimited clip history, cross-device sync, '
+                      'priority support, and early access to AI features.',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 16),
+                    const _UpgradeButton(),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                FilledButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.bolt, size: 16),
-                  label: const Text('Upgrade to Pro — \$5/mo'),
-                  style: FilledButton.styleFrom(
-                      backgroundColor: Colors.amber.shade700),
+              )
+            else
+              _Card(
+                child: Row(
+                  children: [
+                    Icon(Icons.verified_outlined,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 10),
+                    Text(
+                      'You\'re on the ${_planLabel(plan)} plan. Thank you!',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
                 ),
-              ],
-            ],
-          );
-        },
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _planLabel(String plan) => switch (plan) {
+        'pro' => 'Pro',
+        'pro_ai' => 'Pro + AI',
+        'team' => 'Team',
+        _ => 'Free',
+      };
+}
+
+class _UpgradeButton extends StatelessWidget {
+  const _UpgradeButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final url = kReleaseMode
+        ? '${AppConstants.webBaseUrlProd}/upgrade'
+        : '${AppConstants.webBaseUrlDev}/upgrade';
+
+    return FilledButton.icon(
+      onPressed: () => _openUrl(context, url),
+      icon: const Icon(Icons.bolt, size: 16),
+      label: const Text('Upgrade to Pro — \$5/mo'),
+      style: FilledButton.styleFrom(
+        backgroundColor: Colors.amber.shade700,
+        foregroundColor: Colors.black,
       ),
     );
+  }
+
+  Future<void> _openUrl(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open $url')),
+        );
+      }
+    }
   }
 }
 
@@ -226,25 +373,29 @@ class _PlanBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      child: Text(label,
-          style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+      child: Text(
+        label,
+        style: TextStyle(
+            fontSize: 11, color: color, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
 
-// ── Preferences card ───────────────────────────────────────────────────────
+// ── Preferences section ────────────────────────────────────────────────────
 
-class _PreferencesCard extends ConsumerWidget {
-  const _PreferencesCard();
+class _PreferencesSection extends ConsumerWidget {
+  const _PreferencesSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final syncEnabled = ref.watch(_syncEnabledProvider);
 
-    return _Card(
-      child: Column(
-        children: [
-          _ToggleRow(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Card(
+          child: _ToggleRow(
             label: 'Enable sync',
             subtitle: 'Push and pull clips across your devices',
             value: syncEnabled,
@@ -254,26 +405,37 @@ class _PreferencesCard extends ConsumerWidget {
               await prefs.setBool(AppConstants.kSyncEnabled, v);
             },
           ),
-          const Divider(height: 24),
-          _InfoRow(
-            label: 'Platform',
-            value: Platform.isMacOS ? 'macOS' : 'Windows',
+        ),
+        const SizedBox(height: 16),
+        _Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('App Info',
+                  style: TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 12),
+              _InfoRow(
+                  label: 'Platform',
+                  value: Platform.isMacOS ? 'macOS' : 'Windows'),
+              const SizedBox(height: 8),
+              _InfoRow(label: 'Version', value: AppConstants.appVersion),
+              const SizedBox(height: 8),
+              _InfoRow(
+                  label: 'Environment',
+                  value: kReleaseMode ? 'Production' : 'Development'),
+            ],
           ),
-          const SizedBox(height: 8),
-          _InfoRow(
-            label: 'App version',
-            value: AppConstants.appVersion,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-// ── Data card ──────────────────────────────────────────────────────────────
+// ── Data section ───────────────────────────────────────────────────────────
 
-class _DataCard extends ConsumerWidget {
-  const _DataCard();
+class _DataSection extends ConsumerWidget {
+  const _DataSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -282,21 +444,24 @@ class _DataCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Local clip history',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
+              style:
+                  TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
           Text(
             'Clears all clips stored on this device. Remote copies '
             'are not affected and will re-sync on next connection.',
             style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+                fontSize: 13,
+                color:
+                    Theme.of(context).colorScheme.onSurfaceVariant),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: () => _confirmClear(context, ref),
             icon: const Icon(Icons.delete_sweep_outlined, size: 16),
             label: const Text('Clear local clips'),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.orange),
+            style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.orange),
           ),
         ],
       ),
@@ -323,7 +488,8 @@ class _DataCard extends ConsumerWidget {
               await ref.read(databaseServiceProvider).clearAll();
               ref.invalidate(clipsProvider);
             },
-            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+            style:
+                FilledButton.styleFrom(backgroundColor: Colors.orange),
             child: const Text('Clear'),
           ),
         ],
@@ -332,10 +498,10 @@ class _DataCard extends ConsumerWidget {
   }
 }
 
-// ── Danger card ────────────────────────────────────────────────────────────
+// ── Danger section ─────────────────────────────────────────────────────────
 
-class _DangerCard extends ConsumerWidget {
-  const _DangerCard();
+class _DangerSection extends ConsumerWidget {
+  const _DangerSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -344,21 +510,24 @@ class _DangerCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Sign out',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
+              style:
+                  TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
           Text(
             'Removes your session and encryption key from this device. '
             'Your clips and account remain intact.',
             style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+                fontSize: 13,
+                color:
+                    Theme.of(context).colorScheme.onSurfaceVariant),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: () => _confirmLogout(context, ref),
             icon: const Icon(Icons.logout, size: 16),
             label: const Text('Sign out'),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+            style:
+                OutlinedButton.styleFrom(foregroundColor: Colors.red),
           ),
         ],
       ),
@@ -384,7 +553,8 @@ class _DangerCard extends ConsumerWidget {
               Navigator.pop(ctx);
               await _logout(ref);
             },
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style:
+                FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Sign out'),
           ),
         ],
@@ -399,15 +569,12 @@ class _DangerCard extends ConsumerWidget {
     try {
       final rt = await storage.getRefreshToken();
       if (rt != null) await api.logout(rt);
-    } catch (_) {
-      // Best-effort — clear local state regardless
-    }
+    } catch (_) {}
 
     await storage.clearAll();
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.remove(AppConstants.kLastSyncCursor);
 
-    // Clearing the key triggers authListenableProvider → router redirects to /login.
     ref.read(encryptionKeyProvider.notifier).state = null;
   }
 }
@@ -455,12 +622,15 @@ class _ToggleRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w500)),
               const SizedBox(height: 2),
               Text(subtitle,
                   style: TextStyle(
                       fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant)),
             ],
           ),
         ),
@@ -483,7 +653,8 @@ class _InfoRow extends StatelessWidget {
         Text(label,
             style: TextStyle(
                 fontSize: 13,
-                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                color:
+                    Theme.of(context).colorScheme.onSurfaceVariant)),
         Text(value, style: const TextStyle(fontSize: 13)),
       ],
     );

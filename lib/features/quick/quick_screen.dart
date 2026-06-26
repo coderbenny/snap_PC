@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../../core/models/clip_item.dart';
-import '../../core/providers.dart';
 import '../clipboard/clipboard_notifier.dart';
 
 class QuickScreen extends ConsumerWidget {
@@ -38,15 +38,18 @@ class QuickScreen extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.open_in_full, size: 15),
                   tooltip: 'Open main window',
-                  onPressed: () => _openMain(ref),
+                  onPressed: () async {
+                    await _restoreMainWindow();
+                    if (context.mounted) context.go('/');
+                  },
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.close, size: 15),
-                  tooltip: 'Close',
-                  onPressed: () => _close(),
+                  tooltip: 'Hide',
+                  onPressed: () => windowManager.hide(),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
@@ -100,13 +103,6 @@ class QuickScreen extends ConsumerWidget {
       ),
     );
   }
-
-  Future<void> _openMain(WidgetRef ref) async {
-    await _restoreMainWindow();
-    ref.read(trayServiceProvider).showWindow();
-  }
-
-  Future<void> _close() => _restoreMainWindow();
 
   static Future<void> _restoreMainWindow() async {
     await windowManager.setSize(const Size(960, 660));

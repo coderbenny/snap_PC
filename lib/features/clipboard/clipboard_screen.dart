@@ -9,11 +9,55 @@ import 'clipboard_notifier.dart';
 
 // ── Screen ─────────────────────────────────────────────────────────────────
 
-class ClipboardScreen extends ConsumerWidget {
+class ClipboardScreen extends ConsumerStatefulWidget {
   const ClipboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ClipboardScreen> createState() => _ClipboardScreenState();
+}
+
+class _ClipboardScreenState extends ConsumerState<ClipboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Listen for plan upgrades and surface a banner so the user notices
+    // immediately without having to visit Settings.
+    ref.listenManual(planUpgradeNoticeProvider, (_, upgraded) {
+      if (!upgraded || !mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          backgroundColor: Colors.amber.shade800,
+          duration: const Duration(seconds: 6),
+          content: const Row(
+            children: [
+              Icon(Icons.bolt, color: Colors.black, size: 18),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'You\'re now on Pro — sync is enabled!',
+                  style: TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.black87,
+            onPressed: () =>
+                ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+          ),
+        ),
+      );
+      // Reset the flag so it doesn't re-fire on rebuild.
+      ref.read(planUpgradeNoticeProvider.notifier).state = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
         children: [

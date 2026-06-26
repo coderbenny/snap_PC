@@ -3,17 +3,13 @@ import 'dart:io';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
-class TrayService with TrayListener {
-  bool _visible = true;
-
-  /// Called when the user requests a manual sync from the tray menu.
+class TrayService with TrayListener, WindowListener {
   void Function()? onSyncNow;
-
-  /// Called when the user selects Quick Paste from the tray menu.
   void Function()? onQuickPaste;
 
   Future<void> init() async {
     trayManager.addListener(this);
+    windowManager.addListener(this);
 
     await trayManager.setIcon(
       Platform.isMacOS
@@ -26,14 +22,31 @@ class TrayService with TrayListener {
 
   Future<void> dispose() async {
     trayManager.removeListener(this);
+    windowManager.removeListener(this);
     await trayManager.destroy();
+  }
+
+  // ── WindowListener — rebuild menu label when window state changes ──────────
+
+  @override
+  void onWindowFocus() => _rebuildMenu();
+
+  @override
+  void onWindowBlur() => _rebuildMenu();
+
+  @override
+  void onWindowEvent(String eventName) {
+    if (eventName == 'hide' || eventName == 'show') {
+      _rebuildMenu();
+    }
   }
 
   // ── Menu ───────────────────────────────────────────────────────────────────
 
   Future<void> _rebuildMenu() async {
+    final visible = await windowManager.isVisible();
     await trayManager.setContextMenu(Menu(items: [
-      MenuItem(key: 'toggle', label: _visible ? 'Hide SNAP' : 'Show SNAP'),
+      MenuItem(key: 'toggle', label: visible ? 'Hide SNAP' : 'Show SNAP'),
       MenuItem(key: 'quick', label: 'Quick Paste'),
       MenuItem.separator(),
       MenuItem(key: 'sync', label: 'Sync Now'),
@@ -67,26 +80,24 @@ class TrayService with TrayListener {
   // ── Window helpers ─────────────────────────────────────────────────────────
 
   Future<void> _toggleWindow() async {
-    if (_visible) {
+    final visible = await windowManager.isVisible();
+    if (visible) {
       await windowManager.hide();
-      _visible = false;
     } else {
       await windowManager.show();
       await windowManager.focus();
-      _visible = true;
     }
     await _rebuildMenu();
   }
 
   Future<void> showWindow() async {
-    if (!_visible) {
+    final visible = await windowManager.isVisible();
+    if (!visible) {
       await windowManager.show();
       await windowManager.focus();
-      _visible = true;
       await _rebuildMenu();
     }
   }
 
-  /// Returns platform-appropriate Ctrl/Cmd key label.
   static String get modKey => Platform.isMacOS ? '⌘' : 'Ctrl';
 }

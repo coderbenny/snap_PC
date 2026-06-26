@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
@@ -13,6 +15,9 @@ class SnapApp extends ConsumerStatefulWidget {
   ConsumerState<SnapApp> createState() => _SnapAppState();
 }
 
+// Height of the hidden title bar area where macOS traffic lights live.
+const double _kTitleBarHeight = 28.0;
+
 class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
   @override
   void initState() {
@@ -23,6 +28,7 @@ class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
     // Keep background services alive for the full app lifetime.
     ref.read(clipboardServiceProvider);
     ref.read(syncServiceProvider);
+    ref.read(planMonitorProvider);
   }
 
   Future<void> _initTray() async {
@@ -46,7 +52,6 @@ class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
     super.dispose();
   }
 
-  // Hide to tray instead of closing.
   @override
   void onWindowClose() async {
     await windowManager.hide();
@@ -60,6 +65,32 @@ class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       routerConfig: router,
+      builder: (context, child) => _AppFrame(child: child!),
+    );
+  }
+}
+
+/// Wraps every screen with a transparent drag strip at the top so the window
+/// can be moved by dragging, and pushes content below the macOS traffic lights.
+class _AppFrame extends StatelessWidget {
+  final Widget child;
+  const _AppFrame({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    // Only macOS uses TitleBarStyle.hidden — Windows has its own title bar.
+    if (!Platform.isMacOS) return child;
+
+    return Column(
+      children: [
+        DragToMoveArea(
+          child: Container(
+            height: _kTitleBarHeight,
+            color: Colors.transparent,
+          ),
+        ),
+        Expanded(child: child),
+      ],
     );
   }
 }

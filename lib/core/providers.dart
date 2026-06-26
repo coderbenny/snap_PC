@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'constants/app_constants.dart';
 
 import 'services/api_client.dart';
 import 'services/clipboard_service.dart';
@@ -101,6 +105,58 @@ final trayServiceProvider = Provider<TrayService>((ref) {
   service.onSyncNow = () => ref.read(syncServiceProvider).syncNow();
   ref.onDispose(service.dispose);
   return service;
+});
+
+/// Set to true for one cycle when a plan upgrade is detected.
+/// Screens listen to this to show a "Welcome to Pro!" banner.
+final planUpgradeNoticeProvider = StateProvider<bool>((_) => false);
+
+/// Background plan monitor — polls GET /auth/me every [planPollInterval].
+/// Automatically restarts sync and refreshes the account UI when a free user
+/// upgrades to a paid plan, without requiring an app restart.
+final planMonitorProvider = Provider<void>((ref) {
+  Timer? timer;
+  String? lastPlan;
+
+  Future<void> check() async {
+    if (ref.read(encryptionKeyProvider) == null) return;
+    try {
+      final profile = await ref.read(apiClientProvider).me();
+      final newPlan = profile['plan'] ?? 'free';
+      if (lastPlan == 'free' && newPlan != 'free') {
+        ref.invalidate(userProfileProvider);
+        ref.read(syncServiceProvider).start();
+        ref.read(planUpgradeNoticeProvider.notifier).state = true;
+      }
+      lastPlan = newPlan;
+    } catch (_) {
+      // Network hiccup — retry on the next tick.
+    }
+  }
+
+  void startMonitor() {
+    timer?.cancel();
+    check(); // Immediate check so we catch upgrades that happened while offline.
+    timer = Timer.periodic(AppConstants.planPollInterval, (_) => check());
+  }
+
+  void stopMonitor() {
+    timer?.cancel();
+    timer = null;
+    lastPlan = null;
+  }
+
+  ref.listen(encryptionKeyProvider, (_, key) {
+    if (key != null) {
+      startMonitor();
+    } else {
+      stopMonitor();
+    }
+  });
+
+  if (ref.read(encryptionKeyProvider) != null) startMonitor();
+
+  ref.onDispose(stopMonitor);
 });
 
 /// Singleton clipboard watcher — starts/stops automatically as the

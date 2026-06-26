@@ -8,12 +8,17 @@ class AppConstants {
   static const String apiBaseUrlDev = 'http://localhost:5559';
   static const String apiBaseUrlProd = 'https://api.snapclip.app';
 
+  // Website
+  static const String webBaseUrlDev = 'http://localhost:3000';
+  static const String webBaseUrlProd = 'https://snap.life';
+
   // Encryption — must match the web client derivation
   static const int pbkdf2Iterations = 600000;
   static const String keySaltSuffix = ':snap-key-v1';
 
   // Sync
   static const Duration syncInterval = Duration(seconds: 30);
+  static const Duration planPollInterval = Duration(minutes: 5);
   static const int syncBatchSize = 100;
   static const int syncMaxItems = 500;
 

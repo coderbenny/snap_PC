@@ -16,6 +16,7 @@ class SyncService {
 
   Timer? _timer;
   bool _syncing = false;
+  bool _upgradeRequired = false;
 
   void Function(SyncStatus status)? onStatusChange;
   void Function()? onSyncComplete;
@@ -29,8 +30,12 @@ class SyncService {
   bool get isSyncing => _syncing;
 
   Future<void> start() async {
+    _upgradeRequired = false;
     await syncNow();
-    _timer ??= Timer.periodic(AppConstants.syncInterval, (_) => syncNow());
+    // Don't start the timer if the first sync told us the plan doesn't include sync.
+    if (!_upgradeRequired) {
+      _timer ??= Timer.periodic(AppConstants.syncInterval, (_) => syncNow());
+    }
   }
 
   void stop() {
@@ -50,7 +55,8 @@ class SyncService {
       onSyncComplete?.call();
     } on DioException catch (e) {
       if (e.response?.statusCode == 403) {
-        // Free-plan user — sync not available; not an error to display.
+        _upgradeRequired = true;
+        stop();
         onStatusChange?.call(SyncStatus.upgradeRequired);
       } else {
         onStatusChange?.call(SyncStatus.error);
