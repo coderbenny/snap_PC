@@ -40,6 +40,7 @@ Future<void> main() async {
     titleBarStyle: TitleBarStyle.hidden,
   );
   await windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.setPreventClose(true); // hide-to-tray instead of quit
     await windowManager.show();
     await windowManager.focus();
   });

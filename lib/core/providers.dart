@@ -8,6 +8,7 @@ import 'services/clipboard_service.dart';
 import 'services/database_service.dart';
 import 'services/secure_storage_service.dart';
 import 'services/sync_service.dart';
+import 'services/tray_service.dart';
 
 export 'services/api_client.dart';
 export 'services/clipboard_service.dart';
@@ -15,6 +16,7 @@ export 'services/database_service.dart';
 export 'services/encryption_service.dart';
 export 'services/secure_storage_service.dart';
 export 'services/sync_service.dart';
+export 'services/tray_service.dart';
 
 /// Provided via ProviderScope overrides after async init in main().
 final databaseServiceProvider = Provider<DatabaseService>((_) {
@@ -82,6 +84,15 @@ final syncServiceProvider = Provider<SyncService>((ref) {
   if (initialKey != null) service.start();
 
   ref.onDispose(service.stop);
+  return service;
+});
+
+/// Singleton tray service — initialised once at app start.
+/// Wired to syncServiceProvider for "Sync Now" menu item.
+final trayServiceProvider = Provider<TrayService>((ref) {
+  final service = TrayService();
+  service.onSyncNow = () => ref.read(syncServiceProvider).syncNow();
+  ref.onDispose(service.dispose);
   return service;
 });
 
