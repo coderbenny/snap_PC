@@ -2,10 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'services/api_client.dart';
+import 'services/clipboard_service.dart';
 import 'services/database_service.dart';
 import 'services/secure_storage_service.dart';
 
 export 'services/api_client.dart';
+export 'services/clipboard_service.dart';
 export 'services/database_service.dart';
 export 'services/encryption_service.dart';
 export 'services/secure_storage_service.dart';
@@ -35,4 +37,27 @@ final authListenableProvider = Provider<ValueNotifier<bool>>((ref) {
     notifier.value = next != null;
   });
   return notifier;
+});
+
+/// Singleton clipboard watcher — starts/stops automatically as the
+/// encryption key is set or cleared (login / logout).
+final clipboardServiceProvider = Provider<ClipboardService>((ref) {
+  final service = ClipboardService(
+    db: ref.read(databaseServiceProvider),
+    storage: ref.read(secureStorageProvider),
+  );
+
+  ref.listen(encryptionKeyProvider, (_, key) {
+    if (key != null) {
+      service.start(key);
+    } else {
+      service.stop();
+    }
+  });
+
+  final initialKey = ref.read(encryptionKeyProvider);
+  if (initialKey != null) service.start(initialKey);
+
+  ref.onDispose(service.stop);
+  return service;
 });

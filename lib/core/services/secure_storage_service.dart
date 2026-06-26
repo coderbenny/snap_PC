@@ -1,5 +1,6 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:uuid/uuid.dart';
 
 import '../constants/app_constants.dart';
 
@@ -45,6 +46,16 @@ class SecureStorageService {
   Future<bool> hasSession() async {
     final token = await getAccessToken();
     return token != null;
+  }
+
+  /// Returns a persistent UUID for this device, creating one on first call.
+  Future<String> getOrCreateDeviceId() async {
+    const key = 'device_id';
+    final existing = await _storage.read(key: key);
+    if (existing != null) return existing;
+    final id = const Uuid().v4();
+    await _storage.write(key: key, value: id);
+    return id;
   }
 
   /// Clears all stored credentials and the encryption key.
