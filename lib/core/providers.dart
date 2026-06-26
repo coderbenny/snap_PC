@@ -50,6 +50,13 @@ final authListenableProvider = Provider<ValueNotifier<bool>>((ref) {
   return notifier;
 });
 
+/// Fetches email + plan from GET /auth/me. Re-fetches when key changes (login).
+final userProfileProvider = FutureProvider<Map<String, String>>((ref) async {
+  final key = ref.watch(encryptionKeyProvider);
+  if (key == null) return {};
+  return ref.read(apiClientProvider).me();
+});
+
 /// Unix-ms timestamp bumped after each successful sync cycle.
 /// ClipsNotifier watches this to trigger a DB reload after a pull.
 final lastSyncProvider = StateProvider<int>((_) => 0);

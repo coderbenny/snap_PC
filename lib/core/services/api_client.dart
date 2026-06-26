@@ -153,6 +153,17 @@ class ApiClient {
     await _dio.post('/auth/logout', data: {'refresh_token': refreshToken});
   }
 
+  // ── User ──────────────────────────────────────────────────────────────────
+
+  Future<Map<String, String>> me() async {
+    final res = await _dio.get('/auth/me');
+    return {
+      'id': res.data['id'] as String,
+      'email': res.data['email'] as String,
+      'plan': res.data['plan'] as String,
+    };
+  }
+
   // ── Sync ──────────────────────────────────────────────────────────────────
 
   Future<int> pushItems(List<ClipItem> items) async {
