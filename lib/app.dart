@@ -10,8 +10,9 @@ class SnapApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Keep clipboard service alive for the full app lifetime.
+    // Keep background services alive for the full app lifetime.
     ref.read(clipboardServiceProvider);
+    ref.read(syncServiceProvider);
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'SNAP',

@@ -14,6 +14,9 @@ class ClipsNotifier extends AsyncNotifier<List<ClipItem>> {
     final key = ref.watch(encryptionKeyProvider);
     if (key == null) return [];
 
+    // Re-fetch from DB whenever the sync engine completes a pull.
+    ref.watch(lastSyncProvider);
+
     // Wire clipboard service → prepend new clips as they arrive.
     final service = ref.read(clipboardServiceProvider);
     service.onNewClip = _prepend;

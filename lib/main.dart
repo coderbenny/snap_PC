@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -16,6 +17,8 @@ Future<void> main() async {
 
   final db = DatabaseService();
   await db.initialize();
+
+  final prefs = await SharedPreferences.getInstance();
 
   // Restore session from Keychain / DPAPI if available.
   final storage = SecureStorageService();
@@ -45,6 +48,7 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         databaseServiceProvider.overrideWithValue(db),
+        sharedPreferencesProvider.overrideWithValue(prefs),
         initialRouteProvider.overrideWithValue(initialKey != null ? '/' : '/login'),
         if (initialKey != null)
           encryptionKeyProvider.overrideWith((_) => initialKey!),

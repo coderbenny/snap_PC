@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/models/clip_item.dart';
+import '../../core/providers.dart';
 import 'clipboard_notifier.dart';
 
 // ── Screen ─────────────────────────────────────────────────────────────────
@@ -87,14 +88,65 @@ class _Sidebar extends ConsumerWidget {
           ),
           const Spacer(),
           const Divider(height: 1),
+          _SyncStatusTile(),
           ListTile(
             leading: const Icon(Icons.settings_outlined, size: 18),
-            title:
-                const Text('Settings', style: TextStyle(fontSize: 13)),
+            title: const Text('Settings', style: TextStyle(fontSize: 13)),
             onTap: () => context.go('/settings'),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SyncStatusTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(syncStatusProvider);
+    final theme = Theme.of(context);
+
+    final (icon, label, color) = switch (status) {
+      SyncStatus.syncing => (Icons.sync, 'Syncing…', theme.colorScheme.primary),
+      SyncStatus.error => (Icons.sync_problem_outlined, 'Sync error', Colors.red),
+      SyncStatus.upgradeRequired => (
+          Icons.cloud_off_outlined,
+          'Upgrade to sync',
+          theme.colorScheme.onSurfaceVariant
+        ),
+      SyncStatus.idle => (
+          Icons.cloud_done_outlined,
+          'Synced',
+          theme.colorScheme.onSurfaceVariant
+        ),
+    };
+
+    return ListTile(
+      dense: true,
+      leading: status == SyncStatus.syncing
+          ? SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                  strokeWidth: 1.5, color: color),
+            )
+          : Icon(icon, size: 16, color: color),
+      title: Text(label,
+          style: TextStyle(fontSize: 12, color: color)),
+      trailing: status != SyncStatus.syncing && status != SyncStatus.upgradeRequired
+          ? Tooltip(
+              message: 'Sync now',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(4),
+                onTap: () => ref.read(syncServiceProvider).syncNow(),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.refresh, size: 14, color: Colors.white30),
+                ),
+              ),
+            )
+          : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
     );
   }
 }
