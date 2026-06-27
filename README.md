@@ -1,17 +1,183 @@
-# snap_desktop
+# SNAP Desktop
 
-A new Flutter project.
+![Platform macOS](https://img.shields.io/badge/platform-macOS%2010.14%2B-lightgrey?logo=apple)
+![Platform Windows](https://img.shields.io/badge/platform-Windows%2010%2B-blue?logo=windows)
+![Flutter](https://img.shields.io/badge/Flutter-3.44%2B-02569B?logo=flutter)
+![Dart SDK](https://img.shields.io/badge/Dart-%5E3.12.1-0175C2?logo=dart)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## Getting Started
+**SNAP** is a universal clipboard vault for macOS and Windows. Every item you copy is captured automatically, encrypted locally with AES-256-GCM, and synced end-to-end encrypted to the SNAP backend so your clipboard history is available on every device you own.
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## Features
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- **Automatic capture** — watches the system clipboard in the background; every copied text, URL, or image is stored instantly.
+- **AES-256-GCM encryption** — all items are encrypted at rest before touching the local database. Keys are derived with PBKDF2-SHA256 at 600 000 iterations and stored in the OS keychain (macOS Keychain / Windows DPAPI).
+- **Full-text search (FTS5)** — find any clipping by keyword in milliseconds via SQLite FTS5.
+- **Cross-device sync** — end-to-end encrypted sync over HTTPS with the SNAP backend. Real-time plan-change events arrive via Server-Sent Events.
+- **Quick-access overlay** — a global hotkey (default `⌘ Shift V` / `Ctrl Shift V`) opens a compact picker window without leaving your current app.
+- **System tray integration** — SNAP lives in the menu bar / notification area. Click the icon to open the main vault, right-click for options.
+- **Device registration & heartbeat** — devices are registered and kept alive so the server knows which devices are active.
+- **Offline-first** — the full local database is always available; sync runs on a 30-second timer and retries automatically when connectivity returns.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+
+## System Requirements
+
+| | macOS | Windows |
+|---|---|---|
+| OS version | macOS 10.14 Mojave or later | Windows 10 (build 1903) or later |
+| Flutter SDK | 3.44 or later | 3.44 or later |
+| Toolchain | Xcode 15+ with Command Line Tools | Visual Studio 2022 with "Desktop development with C++" workload |
+| Architecture | arm64 (Apple Silicon) or x86_64 | x86_64 |
+
+---
+
+## Quickstart
+
+### 1. Clone the monorepo
+
+```bash
+git clone <repo-url> snap
+cd snap
+```
+
+### 2. Install Flutter dependencies
+
+```bash
+cd pc
+flutter pub get
+```
+
+### 3. Generate Riverpod code
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+### 4. Configure the backend URL
+
+Copy the environment template and set the API base URL to wherever the SNAP server is running (see [Backend Configuration](#backend-configuration)):
+
+```bash
+# The app reads SNAP_API_URL from app_constants.dart; edit that file or
+# set the value before building.
+```
+
+### 5. Run on macOS
+
+```bash
+flutter run -d macos
+```
+
+### 6. Run on Windows
+
+```bash
+flutter run -d windows
+```
+
+### Building release binaries
+
+```bash
+# macOS
+flutter build macos --release
+
+# Windows
+flutter build windows --release
+```
+
+---
+
+## Backend Configuration
+
+The desktop app connects to the SNAP backend defined in:
+
+```
+lib/core/constants/app_constants.dart
+```
+
+Set the `apiBaseUrl` constant to the address of the running server. For local development, start the server first:
+
+```bash
+cd ../server
+# follow the server README to start the backend
+```
+
+The default development URL is `http://localhost:3000`. For production, point it at your deployed server URL.
+
+---
+
+## Keyboard Shortcuts
+
+| Action | macOS | Windows |
+|---|---|---|
+| Open Quick Picker | `⌘ Shift V` | `Ctrl Shift V` |
+| Open Main Vault | Click tray icon | Click tray icon |
+| Search clipboard history | Type in Quick Picker | Type in Quick Picker |
+| Paste selected item | `Return` | `Enter` |
+| Close overlay | `Esc` | `Esc` |
+| Settings | `⌘ ,` | `Ctrl ,` |
+| Quit SNAP | Right-click tray → Quit | Right-click tray → Quit |
+
+---
+
+## Project Structure
+
+```
+pc/
+├── lib/
+│   ├── main.dart                   # App entry point, tray + window init
+│   ├── app.dart                    # Root MaterialApp + Riverpod ProviderScope
+│   ├── router.dart                 # go_router route definitions
+│   ├── core/
+│   │   ├── constants/
+│   │   │   └── app_constants.dart  # API URL, timeouts, encryption params
+│   │   ├── models/
+│   │   │   └── clip_item.dart      # ClipItem domain model
+│   │   ├── providers.dart          # Top-level Riverpod providers
+│   │   └── services/
+│   │       ├── api_client.dart         # Dio HTTP client + auth interceptor
+│   │       ├── clipboard_service.dart  # clipboard_watcher integration
+│   │       ├── database_service.dart   # sqflite_common_ffi + FTS5 setup
+│   │       ├── device_registration_service.dart
+│   │       ├── encryption_service.dart # AES-256-GCM + PBKDF2, runs in Isolate
+│   │       ├── event_stream_service.dart # SSE client for real-time events
+│   │       ├── secure_storage_service.dart # flutter_secure_storage wrapper
+│   │       ├── sync_service.dart       # 30 s timer sync orchestrator
+│   │       └── tray_service.dart       # tray_manager integration
+│   ├── features/
+│   │   ├── auth/                   # Sign-in / sign-up screens
+│   │   ├── clipboard/              # Main vault list + detail views
+│   │   ├── quick/                  # Quick-access overlay window
+│   │   └── settings/               # Settings screen
+│   └── shared/
+│       ├── theme/                  # AppTheme (light + dark)
+│       └── widgets/                # Shared UI components
+├── assets/
+│   └── icons/                      # Tray icons (macOS template + Windows ICO)
+├── macos/                          # macOS runner + entitlements
+├── windows/                        # Windows runner + resource files
+├── pubspec.yaml
+└── analysis_options.yaml
+```
+
+---
+
+## Related Repositories
+
+This desktop app is one part of the SNAP monorepo:
+
+| Directory | Description |
+|---|---|
+| `pc/` | **This repo** — Flutter desktop app (macOS + Windows) |
+| `mobile/` | Flutter mobile app (iOS + Android) |
+| `server/` | SNAP backend — REST API, sync, auth, SSE event stream |
+
+All three share the same end-to-end encryption scheme. The server never sees plaintext clipboard data.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
