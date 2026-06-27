@@ -29,6 +29,7 @@ class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
     ref.read(clipboardServiceProvider);
     ref.read(syncServiceProvider);
     ref.read(planMonitorProvider);
+    ref.read(deviceRegistrationServiceProvider);
   }
 
   Future<void> _initTray() async {

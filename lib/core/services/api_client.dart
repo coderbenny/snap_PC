@@ -196,6 +196,32 @@ class ApiClient {
     return res.data['deleted'] as int;
   }
 
+  // ── Devices ───────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> registerDevice({
+    required String deviceId,
+    required String name,
+    required String platform,
+    String? appVersion,
+  }) async {
+    final res = await _dio.post('/devices/register', data: {
+      'device_id': deviceId,
+      'name': name,
+      'platform': platform,
+      'app_version': ?appVersion,
+    });
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<List<Map<String, dynamic>>> listDevices() async {
+    final res = await _dio.get('/devices');
+    return (res.data['devices'] as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> deleteDevice(String deviceId) async {
+    await _dio.delete('/devices/$deviceId');
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   static Map<String, dynamic> _toApiPayload(ClipItem c) => {

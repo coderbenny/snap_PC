@@ -10,6 +10,7 @@ import 'constants/app_constants.dart';
 import 'services/api_client.dart';
 import 'services/clipboard_service.dart';
 import 'services/database_service.dart';
+import 'services/device_registration_service.dart';
 import 'services/secure_storage_service.dart';
 import 'services/sync_service.dart';
 import 'services/tray_service.dart';
@@ -17,6 +18,7 @@ import 'services/tray_service.dart';
 export 'services/api_client.dart';
 export 'services/clipboard_service.dart';
 export 'services/database_service.dart';
+export 'services/device_registration_service.dart';
 export 'services/encryption_service.dart';
 export 'services/secure_storage_service.dart';
 export 'services/sync_service.dart';
@@ -157,6 +159,30 @@ final planMonitorProvider = Provider<void>((ref) {
   if (ref.read(encryptionKeyProvider) != null) startMonitor();
 
   ref.onDispose(stopMonitor);
+});
+
+/// Singleton device registration service — registers this device on login and
+/// sends a heartbeat every [AppConstants.deviceHeartbeatInterval] thereafter.
+final deviceRegistrationServiceProvider =
+    Provider<DeviceRegistrationService>((ref) {
+  final service = DeviceRegistrationService(
+    api: ref.read(apiClientProvider),
+    storage: ref.read(secureStorageProvider),
+  );
+
+  ref.listen(encryptionKeyProvider, (_, key) {
+    if (key != null) {
+      service.start();
+    } else {
+      service.stop();
+    }
+  });
+
+  final initialKey = ref.read(encryptionKeyProvider);
+  if (initialKey != null) service.start();
+
+  ref.onDispose(service.stop);
+  return service;
 });
 
 /// Singleton clipboard watcher — starts/stops automatically as the
