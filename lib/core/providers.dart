@@ -11,6 +11,7 @@ import 'services/api_client.dart';
 import 'services/clipboard_service.dart';
 import 'services/database_service.dart';
 import 'services/device_registration_service.dart';
+import 'services/event_stream_service.dart';
 import 'services/secure_storage_service.dart';
 import 'services/sync_service.dart';
 import 'services/tray_service.dart';
@@ -20,6 +21,7 @@ export 'services/clipboard_service.dart';
 export 'services/database_service.dart';
 export 'services/device_registration_service.dart';
 export 'services/encryption_service.dart';
+export 'services/event_stream_service.dart';
 export 'services/secure_storage_service.dart';
 export 'services/sync_service.dart';
 export 'services/tray_service.dart';
@@ -159,6 +161,42 @@ final planMonitorProvider = Provider<void>((ref) {
   if (ref.read(encryptionKeyProvider) != null) startMonitor();
 
   ref.onDispose(stopMonitor);
+});
+
+/// SSE event stream — maintains a long-lived connection to GET /events and
+/// fires callbacks immediately when the server pushes a plan_changed event.
+/// Reconnects automatically with back-off on disconnect.
+final eventStreamServiceProvider = Provider<EventStreamService>((ref) {
+  final service = EventStreamService(
+    storage: ref.read(secureStorageProvider),
+  );
+
+  service.onPlanChanged = (newPlan) {
+    final currentPlan =
+        ref.read(userProfileProvider).valueOrNull?['plan'] ?? 'free';
+    if (currentPlan == 'free' && newPlan != 'free') {
+      ref.invalidate(userProfileProvider);
+      ref.read(syncServiceProvider).start();
+      ref.read(planUpgradeNoticeProvider.notifier).state = true;
+    } else {
+      // Downgrade or same-tier refresh — just update the profile cache.
+      ref.invalidate(userProfileProvider);
+    }
+  };
+
+  ref.listen(encryptionKeyProvider, (_, key) {
+    if (key != null) {
+      service.start();
+    } else {
+      service.stop();
+    }
+  });
+
+  final initialKey = ref.read(encryptionKeyProvider);
+  if (initialKey != null) service.start();
+
+  ref.onDispose(service.stop);
+  return service;
 });
 
 /// Singleton device registration service — registers this device on login and
