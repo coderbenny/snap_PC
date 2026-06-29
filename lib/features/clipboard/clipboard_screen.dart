@@ -257,6 +257,11 @@ class _ClipList extends ConsumerWidget {
             data: (all) {
               var items = all.where((c) => !c.isDeleted).toList();
 
+              // Count clips whose decryption failed — shown as a banner so
+              // the user understands why some clips appear as [encrypted].
+              final failedCount =
+                  items.where((c) => c.plaintext == null).length;
+
               if (filter != null) {
                 items = items.where((c) => c.contentType == filter).toList();
               }
@@ -273,8 +278,15 @@ class _ClipList extends ConsumerWidget {
 
               return ListView.builder(
                 padding: const EdgeInsets.all(12),
-                itemCount: items.length,
-                itemBuilder: (context, i) => _ClipCard(clip: items[i]),
+                itemCount: items.length + (failedCount > 0 ? 1 : 0),
+                itemBuilder: (context, i) {
+                  if (i == 0 && failedCount > 0) {
+                    return _DecryptFailureBanner(
+                        failedCount: failedCount, total: all.length);
+                  }
+                  final idx = failedCount > 0 ? i - 1 : i;
+                  return _ClipCard(clip: items[idx]);
+                },
               );
             },
           ),
@@ -324,6 +336,49 @@ class _EmptyState extends StatelessWidget {
           SizedBox(height: 6),
           Text('Copy anything to see it appear here.',
               style: TextStyle(color: Colors.white30, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Decrypt failure banner ────────────────────────────────────────────────
+
+class _DecryptFailureBanner extends StatelessWidget {
+  final int failedCount;
+  final int total;
+
+  const _DecryptFailureBanner(
+      {required this.failedCount, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    final allFailed = failedCount == total;
+    final message = allFailed
+        ? 'None of your clips could be decrypted. Sign out and sign back in to re-enter your password.'
+        : '$failedCount clip${failedCount == 1 ? '' : 's'} could not be decrypted. '
+            'They may have been saved by an older version of the app.';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade900.withValues(alpha: 0.25),
+        border: Border.all(color: Colors.amber.shade700.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded,
+              size: 16, color: Colors.amber.shade400),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                  fontSize: 12, color: Colors.amber.shade300),
+            ),
+          ),
         ],
       ),
     );
