@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.snapclip" "\0"
-            VALUE "FileDescription", "snap_desktop" "\0"
+            VALUE "CompanyName", "Snapit" "\0"
+            VALUE "FileDescription", "Snapit" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "snap_desktop" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.snapclip. All rights reserved." "\0"
-            VALUE "OriginalFilename", "snap_desktop.exe" "\0"
-            VALUE "ProductName", "snap_desktop" "\0"
+            VALUE "InternalName", "snapit" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Snapit. All rights reserved." "\0"
+            VALUE "OriginalFilename", "snapit.exe" "\0"
+            VALUE "ProductName", "Snapit" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

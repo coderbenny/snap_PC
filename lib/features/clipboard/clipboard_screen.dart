@@ -96,7 +96,7 @@ class _Sidebar extends ConsumerWidget {
                 Icon(Icons.content_paste_rounded,
                     size: 18, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
-                Text('SNAP',
+                Text('Snapit',
                     style: theme.textTheme.titleSmall
                         ?.copyWith(letterSpacing: 1)),
               ],

@@ -357,7 +357,7 @@ class _SnapLogo extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'SNAP',
+          'Snapit',
           style: Theme.of(context)
               .textTheme
               .titleLarge

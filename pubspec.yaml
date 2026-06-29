@@ -1,5 +1,5 @@
-name: snap_desktop
-description: "SNAP — Universal Clipboard Vault for macOS and Windows"
+name: snapit_desktop
+description: "Snapit — Universal Clipboard Vault for macOS and Windows"
 publish_to: 'none'
 version: 1.0.0+1
 

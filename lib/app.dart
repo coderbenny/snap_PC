@@ -63,7 +63,7 @@ class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'SNAP',
+      title: 'Snapit',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       routerConfig: router,

@@ -1,16 +1,16 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'SNAP';
+  static const String appName = 'Snapit';
   static const String appVersion = '1.0.0';
 
   // API
   static const String apiBaseUrlDev = 'http://localhost:5559';
-  static const String apiBaseUrlProd = 'https://api.snapclip.app';
+  static const String apiBaseUrlProd = 'https://api.snapit.ink';
 
   // Website
   static const String webBaseUrlDev = 'http://localhost:3000';
-  static const String webBaseUrlProd = 'https://snap.life';
+  static const String webBaseUrlProd = 'https://snapit.ink';
 
   // Encryption — must match the web client derivation
   static const int pbkdf2Iterations = 600000;

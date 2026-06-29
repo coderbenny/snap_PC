@@ -46,12 +46,12 @@ class TrayService with TrayListener, WindowListener {
   Future<void> _rebuildMenu() async {
     final visible = await windowManager.isVisible();
     await trayManager.setContextMenu(Menu(items: [
-      MenuItem(key: 'toggle', label: visible ? 'Hide SNAP' : 'Show SNAP'),
+      MenuItem(key: 'toggle', label: visible ? 'Hide Snapit' : 'Show Snapit'),
       MenuItem(key: 'quick', label: 'Quick Paste'),
       MenuItem.separator(),
       MenuItem(key: 'sync', label: 'Sync Now'),
       MenuItem.separator(),
-      MenuItem(key: 'quit', label: 'Quit SNAP'),
+      MenuItem(key: 'quit', label: 'Quit Snapit'),
     ]));
   }
 

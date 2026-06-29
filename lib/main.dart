@@ -34,7 +34,7 @@ Future<void> main() async {
   const windowOptions = WindowOptions(
     size: Size(960, 660),
     minimumSize: Size(680, 480),
-    title: 'SNAP',
+    title: 'Snapit',
     center: true,
     backgroundColor: Color(0xFF0A0A0A),
     titleBarStyle: TitleBarStyle.hidden,
