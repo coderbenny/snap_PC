@@ -28,6 +28,25 @@ class PullResult {
       {required this.items, required this.hasMore, required this.nextSince});
 }
 
+// ── Device-ID interceptor ─────────────────────────────────────────────────
+
+class _DeviceIdInterceptor extends Interceptor {
+  final SecureStorageService _storage;
+  String? _deviceId;
+
+  _DeviceIdInterceptor(this._storage);
+
+  @override
+  Future<void> onRequest(
+      RequestOptions options, RequestInterceptorHandler handler) async {
+    _deviceId ??= await _storage.getOrCreateDeviceId();
+    if (_deviceId != null) {
+      options.headers['X-Device-ID'] = _deviceId;
+    }
+    handler.next(options);
+  }
+}
+
 // ── Auth interceptor ───────────────────────────────────────────────────────
 
 class _AuthInterceptor extends Interceptor {
@@ -103,6 +122,7 @@ class ApiClient {
       headers: {'Content-Type': 'application/json'},
     ));
 
+    _dio.interceptors.add(_DeviceIdInterceptor(_storage));
     _dio.interceptors.add(_AuthInterceptor(_storage, _dio));
 
     if (kDebugMode) {
@@ -220,6 +240,15 @@ class ApiClient {
 
   Future<void> deleteDevice(String deviceId) async {
     await _dio.delete('/devices/$deviceId');
+  }
+
+  // ── Billing ───────────────────────────────────────────────────────────────
+
+  /// Generate a short-lived browser upgrade URL for the given [tier].
+  /// Opens the URL externally so the user can pay via Paystack.
+  Future<String> getUpgradeLink(String tier) async {
+    final res = await _dio.post('/billing/upgrade-link', data: {'tier': tier});
+    return res.data['url'] as String;
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

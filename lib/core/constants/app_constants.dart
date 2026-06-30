@@ -25,8 +25,10 @@ class AppConstants {
   // Clipboard polling
   static const Duration clipboardPollInterval = Duration(milliseconds: 500);
 
-  // Device heartbeat — re-registers this device to update last_seen_at
-  static const Duration deviceHeartbeatInterval = Duration(minutes: 30);
+  // Device heartbeat — re-registers this device to update last_seen_at.
+  // The backend also updates last_seen_at on every request via X-Device-ID,
+  // so this is only a fallback for idle periods.
+  static const Duration deviceHeartbeatInterval = Duration(minutes: 5);
 
   // Secure storage keys
   static const String kAccessToken = 'access_token';

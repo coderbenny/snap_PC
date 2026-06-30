@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -324,19 +325,31 @@ class _AccountSection extends ConsumerWidget {
       };
 }
 
-class _UpgradeButton extends StatelessWidget {
+class _UpgradeButton extends ConsumerStatefulWidget {
   const _UpgradeButton();
 
   @override
-  Widget build(BuildContext context) {
-    final url = kReleaseMode
-        ? '${AppConstants.webBaseUrlProd}/upgrade'
-        : '${AppConstants.webBaseUrlDev}/upgrade';
+  ConsumerState<_UpgradeButton> createState() => _UpgradeButtonState();
+}
 
+class _UpgradeButtonState extends ConsumerState<_UpgradeButton> {
+  bool _loading = false;
+
+  @override
+  Widget build(BuildContext context) {
     return FilledButton.icon(
-      onPressed: () => _openUrl(context, url),
-      icon: const Icon(Icons.bolt, size: 16),
-      label: const Text('Upgrade to Pro — \$5/mo'),
+      onPressed: _loading ? null : _upgrade,
+      icon: _loading
+          ? const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.black54,
+              ),
+            )
+          : const Icon(Icons.bolt, size: 16),
+      label: Text(_loading ? 'Opening browser…' : 'Upgrade to Pro — \$5/mo'),
       style: FilledButton.styleFrom(
         backgroundColor: Colors.amber.shade700,
         foregroundColor: Colors.black,
@@ -344,14 +357,35 @@ class _UpgradeButton extends StatelessWidget {
     );
   }
 
-  Future<void> _openUrl(BuildContext context, String url) async {
-    final uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (context.mounted) {
+  Future<void> _upgrade() async {
+    setState(() => _loading = true);
+    try {
+      final url = await ref.read(apiClientProvider).getUpgradeLink('pro');
+      final uri = Uri.parse(url);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open browser. Please try again.')),
+          );
+        }
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        final data = e.response?.data;
+        final msg = (data is Map ? data['error']?['message'] : null) ??
+            'Could not open upgrade page. Please try again.';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open $url')),
+          SnackBar(content: Text(msg.toString())),
         );
       }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open upgrade page. Please try again.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 }
