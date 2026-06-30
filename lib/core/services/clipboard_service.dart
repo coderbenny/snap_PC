@@ -14,6 +14,7 @@ class ClipboardService with ClipboardListener {
   Uint8List? _key;
   String? _deviceId;
   String? _lastText;
+  bool _listening = false;
 
   /// Called whenever a new clip is captured and persisted.
   void Function(ClipItem clip)? onNewClip;
@@ -25,15 +26,24 @@ class ClipboardService with ClipboardListener {
   Future<void> start(Uint8List key) async {
     _key = key;
     _deviceId ??= await _storage.getOrCreateDeviceId();
-    clipboardWatcher.addListener(this);
-    await clipboardWatcher.start();
+    if (!_listening) {
+      clipboardWatcher.addListener(this);
+      _listening = true;
+      await clipboardWatcher.start();
+    } else {
+      // Key rotated — watcher already running, just update the key above.
+    }
   }
 
   void updateKey(Uint8List key) => _key = key;
 
   Future<void> stop() async {
     _key = null;
-    clipboardWatcher.removeListener(this);
+    _lastText = null;
+    if (_listening) {
+      clipboardWatcher.removeListener(this);
+      _listening = false;
+    }
     try {
       await clipboardWatcher.stop();
     } catch (_) {

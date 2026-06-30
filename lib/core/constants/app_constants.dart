@@ -5,8 +5,8 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // API
-  static const String apiBaseUrlDev = 'http://localhost:5559';
-  static const String apiBaseUrlProd = 'https://api.snapit.ink';
+  static const String apiBaseUrlDev = 'http://localhost:5559/snap';
+  static const String apiBaseUrlProd = 'https://api.snapit.ink/snap';
 
   // Website
   static const String webBaseUrlDev = 'http://localhost:3000';
