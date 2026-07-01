@@ -372,11 +372,12 @@ class _UpgradeButtonState extends ConsumerState<_UpgradeButton> {
     } on DioException catch (e) {
       if (mounted) {
         final data = e.response?.data;
-        final msg = (data is Map ? data['error']?['message'] : null) ??
-            'Could not open upgrade page. Please try again.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg.toString())),
-        );
+        var msg = 'Could not open upgrade page. Please try again.';
+        if (data is Map) {
+          final err = data['error'];
+          if (err is Map) msg = err['message']?.toString() ?? msg;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (_) {
       if (mounted) {
