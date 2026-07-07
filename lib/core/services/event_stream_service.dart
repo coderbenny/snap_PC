@@ -17,6 +17,8 @@ class EventStreamService {
   final SecureStorageService _storage;
 
   void Function(String newPlan)? onPlanChanged;
+  void Function(Map<String, dynamic> payload)? onTransferIncoming;
+  void Function(String sessionId)? onTransferCancelled;
 
   EventStreamService({required SecureStorageService storage}) : _storage = storage;
 
@@ -106,14 +108,20 @@ class EventStreamService {
   }
 
   void _dispatchEvent(String event, String data) {
-    if (event == 'plan_changed') {
-      try {
-        final map = jsonDecode(data) as Map<String, dynamic>;
-        final plan = map['plan'] as String?;
-        if (plan != null) onPlanChanged?.call(plan);
-      } catch (e) {
-        debugPrint('[SSE] Failed to parse plan_changed payload: $e');
+    try {
+      final map = jsonDecode(data) as Map<String, dynamic>;
+      switch (event) {
+        case 'plan_changed':
+          final plan = map['plan'] as String?;
+          if (plan != null) onPlanChanged?.call(plan);
+        case 'transfer_incoming':
+          onTransferIncoming?.call(map);
+        case 'transfer_cancelled':
+          final sessionId = map['session_id'] as String?;
+          if (sessionId != null) onTransferCancelled?.call(sessionId);
       }
+    } catch (e) {
+      debugPrint('[SSE] Failed to parse $event payload: $e');
     }
   }
 

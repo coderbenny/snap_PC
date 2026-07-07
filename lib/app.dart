@@ -15,7 +15,6 @@ class SnapApp extends ConsumerStatefulWidget {
   ConsumerState<SnapApp> createState() => _SnapAppState();
 }
 
-// Height of the hidden title bar area where macOS traffic lights live.
 const double _kTitleBarHeight = 28.0;
 
 class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
@@ -25,12 +24,17 @@ class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
     windowManager.addListener(this);
     _initTray();
 
-    // Keep background services alive for the full app lifetime.
     ref.read(clipboardServiceProvider);
     ref.read(syncServiceProvider);
     ref.read(planMonitorProvider);
     ref.read(deviceRegistrationServiceProvider);
     ref.read(eventStreamServiceProvider);
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
   }
 
   Future<void> _initTray() async {
@@ -40,7 +44,6 @@ class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
   }
 
   Future<void> _showQuickPanel() async {
-    // Resize to compact panel, center on screen, show.
     await windowManager.setSize(const Size(360, 480));
     await windowManager.center();
     await windowManager.show();
@@ -49,15 +52,7 @@ class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
   }
 
   @override
-  void dispose() {
-    windowManager.removeListener(this);
-    super.dispose();
-  }
-
-  @override
-  void onWindowClose() async {
-    await windowManager.hide();
-  }
+  void onWindowClose() async => windowManager.hide();
 
   @override
   Widget build(BuildContext context) {
@@ -72,24 +67,21 @@ class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
   }
 }
 
-/// Wraps every screen with a transparent drag strip at the top so the window
-/// can be moved by dragging, and pushes content below the macOS traffic lights.
+/// Adds the macOS transparent title-bar drag strip above every screen.
+/// The DropTarget and incoming-transfer listener live in AuthShell (router.dart)
+/// so they have a BuildContext that is inside the GoRouter Navigator.
 class _AppFrame extends StatelessWidget {
   final Widget child;
   const _AppFrame({required this.child});
 
   @override
   Widget build(BuildContext context) {
-    // Only macOS uses TitleBarStyle.hidden — Windows has its own title bar.
     if (!Platform.isMacOS) return child;
 
     return Column(
       children: [
         DragToMoveArea(
-          child: Container(
-            height: _kTitleBarHeight,
-            color: Colors.transparent,
-          ),
+          child: Container(height: _kTitleBarHeight, color: Colors.transparent),
         ),
         Expanded(child: child),
       ],

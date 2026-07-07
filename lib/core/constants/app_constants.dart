@@ -8,9 +8,17 @@ class AppConstants {
   static const String apiBaseUrlDev = 'http://localhost:5559/snap';
   static const String apiBaseUrlProd = 'https://api.snapit.ink/snap';
 
+  // WebSocket base (mirrors API but with ws/wss scheme)
+  static const String wsBaseUrlDev = 'ws://localhost:5559/snap';
+  static const String wsBaseUrlProd = 'wss://api.snapit.ink/snap';
+
   // Website
   static const String webBaseUrlDev = 'http://localhost:3000';
   static const String webBaseUrlProd = 'https://snapit.ink';
+
+  // File transfer
+  static const int transferChunkSize = 65536; // 64 KB
+  static const Duration transferTimeout = Duration(minutes: 10);
 
   // Encryption — must match the web client derivation
   static const int pbkdf2Iterations = 600000;

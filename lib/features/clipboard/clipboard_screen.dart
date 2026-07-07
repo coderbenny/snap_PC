@@ -134,6 +134,11 @@ class _Sidebar extends ConsumerWidget {
           const Divider(height: 1),
           _SyncStatusTile(),
           ListTile(
+            leading: const Icon(Icons.swap_horiz_rounded, size: 18),
+            title: const Text('Transfers', style: TextStyle(fontSize: 13)),
+            onTap: () => context.go('/transfers'),
+          ),
+          ListTile(
             leading: const Icon(Icons.settings_outlined, size: 18),
             title: const Text('Settings', style: TextStyle(fontSize: 13)),
             onTap: () => context.go('/settings'),

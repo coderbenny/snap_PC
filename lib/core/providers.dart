@@ -15,6 +15,8 @@ import 'services/event_stream_service.dart';
 import 'services/secure_storage_service.dart';
 import 'services/sync_service.dart';
 import 'services/tray_service.dart';
+import 'services/transfer_service.dart';
+import '../features/transfer/transfer_state.dart';
 
 export 'services/api_client.dart';
 export 'services/clipboard_service.dart';
@@ -25,6 +27,7 @@ export 'services/event_stream_service.dart';
 export 'services/secure_storage_service.dart';
 export 'services/sync_service.dart';
 export 'services/tray_service.dart';
+export 'services/transfer_service.dart';
 
 /// Provided via ProviderScope overrides after async init in main().
 final databaseServiceProvider = Provider<DatabaseService>((_) {
@@ -58,8 +61,19 @@ final authListenableProvider = Provider<ValueNotifier<bool>>((ref) {
   return notifier;
 });
 
+/// Fetches addon prices from GET /billing/plans.
+/// Returns a map keyed by addon id, e.g. { 'file_transfer': { 'price_usd_cents': 200, ... } }.
+/// Re-fetches when the user logs in (key changes).
+final addonPricesProvider = FutureProvider<Map<String, Map<String, dynamic>>>((ref) async {
+  final key = ref.watch(encryptionKeyProvider);
+  if (key == null) return {};
+  final data = await ref.read(apiClientProvider).fetchPlans();
+  final addons = (data['addons'] as List? ?? []).cast<Map<String, dynamic>>();
+  return {for (final a in addons) a['id'] as String: a};
+});
+
 /// Fetches email + plan from GET /auth/me. Re-fetches when key changes (login).
-final userProfileProvider = FutureProvider<Map<String, String>>((ref) async {
+final userProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final key = ref.watch(encryptionKeyProvider);
   if (key == null) return {};
   return ref.read(apiClientProvider).me();
@@ -179,9 +193,24 @@ final eventStreamServiceProvider = Provider<EventStreamService>((ref) {
       ref.read(syncServiceProvider).start();
       ref.read(planUpgradeNoticeProvider.notifier).state = true;
     } else {
-      // Downgrade or same-tier refresh — just update the profile cache.
       ref.invalidate(userProfileProvider);
     }
+  };
+
+  service.onTransferIncoming = (payload) {
+    final incoming = IncomingTransfer(
+      sessionId: payload['session_id'] as String,
+      fileName: payload['file_name'] as String,
+      fileSize: payload['file_size'] as int,
+      mimeType: payload['mime_type'] as String,
+      senderDeviceName: payload['sender_device_name'] as String,
+      targetDeviceId: payload['target_device_id'] as String,
+    );
+    ref.read(incomingTransferProvider.notifier).show(incoming);
+  };
+
+  service.onTransferCancelled = (sessionId) {
+    ref.read(incomingTransferProvider.notifier).dismiss(sessionId);
   };
 
   ref.listen(encryptionKeyProvider, (_, key) {
@@ -244,4 +273,11 @@ final clipboardServiceProvider = Provider<ClipboardService>((ref) {
 
   ref.onDispose(service.stop);
   return service;
+});
+
+final transferServiceProvider = Provider<TransferService>((ref) {
+  return TransferService(
+    api: ref.read(apiClientProvider),
+    storage: ref.read(secureStorageProvider),
+  );
 });

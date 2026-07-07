@@ -222,8 +222,9 @@ class _AccountSection extends ConsumerWidget {
         ),
       ),
       data: (data) {
-        final email = data['email'] ?? '—';
-        final plan = data['plan'] ?? 'free';
+        final email = data['email'] as String? ?? '—';
+        final plan = data['plan'] as String? ?? 'free';
+        final fileTransferAddon = data['file_transfer_addon'] as bool? ?? false;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -296,7 +297,7 @@ class _AccountSection extends ConsumerWidget {
                   ],
                 ),
               )
-            else
+            else ...[
               _Card(
                 child: Row(
                   children: [
@@ -311,6 +312,11 @@ class _AccountSection extends ConsumerWidget {
                   ],
                 ),
               ),
+              if (plan != 'team') ...[
+                const SizedBox(height: 16),
+                _FileTransferAddonCard(active: fileTransferAddon),
+              ],
+            ],
           ],
         );
       },
@@ -941,6 +947,120 @@ class _InfoRow extends StatelessWidget {
                     Theme.of(context).colorScheme.onSurfaceVariant)),
         Text(value, style: const TextStyle(fontSize: 13)),
       ],
+    );
+  }
+}
+
+// ── File-transfer addon card ───────────────────────────────────────────────
+
+class _FileTransferAddonCard extends ConsumerStatefulWidget {
+  final bool active;
+  const _FileTransferAddonCard({required this.active});
+
+  @override
+  ConsumerState<_FileTransferAddonCard> createState() =>
+      _FileTransferAddonCardState();
+}
+
+class _FileTransferAddonCardState
+    extends ConsumerState<_FileTransferAddonCard> {
+  bool _loading = false;
+
+  Future<void> _purchase() async {
+    setState(() => _loading = true);
+    try {
+      final api = ref.read(apiClientProvider);
+      final result = await api.purchaseFileTransferAddon();
+      final url = result['authorization_url'] as String?;
+      if (url != null && mounted) {
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start payment: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final addonPrices = ref.watch(addonPricesProvider);
+    final ftInfo = addonPrices.valueOrNull?['file_transfer'];
+    final priceCents = ftInfo?['price_usd_cents'] as int? ?? 0;
+    final description = ftInfo?['description'] as String? ??
+        'Drag & drop files between your devices — server-relayed, nothing stored on disk.';
+    final priceLabel = priceCents > 0
+        ? '\$${(priceCents / 100).toStringAsFixed(2)}'
+        : '…';
+    final typeLabel = ftInfo?['type'] == 'one_time' ? 'one-time' : '';
+
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.share_rounded, size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                'File Transfer Add-on',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              if (widget.active)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade700.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Active',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.green.shade400,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$description${typeLabel.isNotEmpty && priceCents > 0 ? ' $priceLabel $typeLabel.' : ''}',
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          if (!widget.active) ...[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: (_loading || priceCents == 0) ? null : _purchase,
+              icon: _loading
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.add, size: 16),
+              label: Text(_loading
+                  ? 'Opening payment…'
+                  : priceCents > 0
+                      ? 'Add for $priceLabel'
+                      : 'Loading…'),
+              style: FilledButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  textStyle: const TextStyle(fontSize: 13)),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

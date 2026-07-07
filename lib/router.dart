@@ -6,6 +6,8 @@ import 'features/auth/login_screen.dart';
 import 'features/clipboard/clipboard_screen.dart';
 import 'features/quick/quick_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'features/shell/auth_shell.dart';
+import 'features/transfer/transfer_history_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final initialLocation = ref.read(initialRouteProvider);
@@ -26,9 +28,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
-      GoRoute(path: '/', builder: (_, _) => const ClipboardScreen()),
       GoRoute(path: '/quick', builder: (_, _) => const QuickScreen()),
-      GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+
+      // Authenticated screens share AuthShell, which owns the DropTarget and
+      // incoming-transfer listener. ShellRoute puts the shell context inside
+      // the GoRouter Navigator so showModalBottomSheet works correctly.
+      ShellRoute(
+        builder: (context, state, child) => AuthShell(child: child),
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const ClipboardScreen()),
+          GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+          GoRoute(path: '/transfers', builder: (_, _) => const TransferHistoryScreen()),
+        ],
+      ),
     ],
   );
 });

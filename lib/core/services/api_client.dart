@@ -175,13 +175,19 @@ class ApiClient {
 
   // ── User ──────────────────────────────────────────────────────────────────
 
-  Future<Map<String, String>> me() async {
+  Future<Map<String, dynamic>> me() async {
     final res = await _dio.get('/auth/me');
     return {
       'id': res.data['id'] as String,
       'email': res.data['email'] as String,
       'plan': res.data['plan'] as String,
+      'file_transfer_addon': res.data['file_transfer_addon'] as bool? ?? false,
     };
+  }
+
+  Future<Map<String, dynamic>> purchaseFileTransferAddon() async {
+    final res = await _dio.post('/billing/addon/file-transfer');
+    return res.data as Map<String, dynamic>;
   }
 
   // ── Sync ──────────────────────────────────────────────────────────────────
@@ -242,7 +248,34 @@ class ApiClient {
     await _dio.delete('/devices/$deviceId');
   }
 
+  // ── Transfer ──────────────────────────────────────────────────────────────
+
+  Future<String> startTransfer({
+    required String fileName,
+    required int fileSize,
+    required String mimeType,
+    required String targetDeviceId,
+  }) async {
+    final res = await _dio.post('/transfer/start', data: {
+      'file_name': fileName,
+      'file_size': fileSize,
+      'mime_type': mimeType,
+      'target_device_id': targetDeviceId,
+    });
+    return res.data['session_id'] as String;
+  }
+
+  Future<void> cancelTransfer(String sessionId) async {
+    await _dio.delete('/transfer/$sessionId');
+  }
+
   // ── Billing ───────────────────────────────────────────────────────────────
+
+  /// Returns plan list + addons with live prices from the backend.
+  Future<Map<String, dynamic>> fetchPlans() async {
+    final res = await _dio.get('/billing/plans');
+    return res.data as Map<String, dynamic>;
+  }
 
   /// Generate a short-lived browser upgrade URL for the given [tier].
   /// Opens the URL externally so the user can pay via Paystack.
