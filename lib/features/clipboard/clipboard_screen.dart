@@ -401,7 +401,7 @@ class _DecryptFailureBanner extends ConsumerWidget {
               onPressed: () async {
                 final confirmed = await showDialog<bool>(
                   context: context,
-                  builder: (_) => AlertDialog(
+                  builder: (dialogContext) => AlertDialog(
                     title: const Text('Remove old clips?'),
                     content: const Text(
                       'The affected clips will be removed from this device. '
@@ -410,11 +410,11 @@ class _DecryptFailureBanner extends ConsumerWidget {
                     ),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context, false),
+                        onPressed: () => Navigator.pop(dialogContext, false),
                         child: const Text('Cancel'),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pop(context, true),
+                        onPressed: () => Navigator.pop(dialogContext, true),
                         child: const Text('Remove'),
                       ),
                     ],
