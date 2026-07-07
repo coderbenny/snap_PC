@@ -188,9 +188,10 @@ class _SyncStatusTile extends ConsumerWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(4),
                 onTap: () => ref.read(syncServiceProvider).syncNow(),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.refresh, size: 14, color: Colors.white30),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.refresh, size: 14,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
                 ),
               ),
             )
@@ -257,7 +258,11 @@ class _ClipList extends ConsumerWidget {
                 const Center(child: CircularProgressIndicator(strokeWidth: 2)),
             error: (e, _) => Center(
               child: Text('Error: $e',
-                  style: const TextStyle(color: Colors.white38)),
+                  style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.4))),
             ),
             data: (all) {
               var items = all.where((c) => !c.isDeleted).toList();
@@ -329,18 +334,21 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final cs = Theme.of(context).colorScheme;
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.content_paste_rounded,
-              size: 48, color: Colors.white24),
-          SizedBox(height: 16),
+              size: 48, color: cs.onSurface.withValues(alpha: 0.2)),
+          const SizedBox(height: 16),
           Text('No clips yet',
-              style: TextStyle(color: Colors.white54, fontSize: 15)),
-          SizedBox(height: 6),
+              style: TextStyle(
+                  color: cs.onSurface.withValues(alpha: 0.5), fontSize: 15)),
+          const SizedBox(height: 6),
           Text('Copy anything to see it appear here.',
-              style: TextStyle(color: Colors.white30, fontSize: 12)),
+              style: TextStyle(
+                  color: cs.onSurface.withValues(alpha: 0.3), fontSize: 12)),
         ],
       ),
     );
@@ -360,9 +368,9 @@ class _DecryptFailureBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final allFailed = failedCount == total;
     final message = allFailed
-        ? 'None of your clips could be decrypted — your encryption key may not match. Sign out and sign back in to re-enter your password.'
-        : '$failedCount clip${failedCount == 1 ? '' : 's'} could not be decrypted. '
-            'They may be from an older version of the app. Removing them is safe — synced clips will re-appear after the next sync.';
+        ? 'None of your clips could be decrypted. This usually means a wrong password was entered. Sign out and sign back in to fix this.'
+        : '$failedCount clip${failedCount == 1 ? '' : 's'} could not be decrypted — likely left over from an older app version. '
+            'Your history on the server is untouched. Tap Remove to clear them locally; they will re-sync automatically.';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -395,10 +403,10 @@ class _DecryptFailureBanner extends ConsumerWidget {
                   context: context,
                   builder: (_) => AlertDialog(
                     title: const Text('Remove old clips?'),
-                    content: Text(
-                      'This will delete $failedCount clip${failedCount == 1 ? '' : 's'} '
-                      'that cannot be decrypted. Clips that were synced from '
-                      'the server will reappear on the next sync.',
+                    content: const Text(
+                      'The affected clips will be removed from this device. '
+                      'Any clips already synced to the server will reappear '
+                      'automatically on the next sync — no history is lost.',
                     ),
                     actions: [
                       TextButton(
@@ -567,7 +575,8 @@ class _TypeIcon extends StatelessWidget {
       ContentType.url => (Icons.link_rounded, Colors.blue),
       ContentType.image => (Icons.image_outlined, Colors.purple),
       ContentType.file => (Icons.insert_drive_file_outlined, Colors.orange),
-      ContentType.text => (Icons.text_fields_rounded, Colors.white38),
+      ContentType.text => (Icons.text_fields_rounded,
+          Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35)),
     };
     return Icon(icon, size: 15, color: color);
   }
