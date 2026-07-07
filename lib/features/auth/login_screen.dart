@@ -33,7 +33,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -54,14 +54,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
 
       ref.read(encryptionKeyProvider.notifier).state = key;
-    } on Exception catch (e) {
-      setState(() => _error = _parseError(e));
+    } catch (e) {
+      if (mounted) setState(() => _error = _parseError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  String _parseError(Exception e) {
+  String _parseError(Object e) {
     debugPrint('[Login] error: $e');
     final msg = e.toString().toLowerCase();
     if (msg.contains('401') || msg.contains('invalid credentials') ||
@@ -69,7 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return 'Invalid email or password';
     }
     if (msg.contains('connection') || msg.contains('socket') ||
-        msg.contains('network')) {
+        msg.contains('network') || msg.contains('refused')) {
       return 'Cannot reach server — check your connection';
     }
     return 'Sign-in failed — please try again';
@@ -188,7 +188,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -214,21 +214,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           );
 
       ref.read(encryptionKeyProvider.notifier).state = key;
-    } on Exception catch (e) {
-      setState(() => _error = _parseError(e));
+    } catch (e) {
+      if (mounted) setState(() => _error = _parseError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  String _parseError(Exception e) {
+  String _parseError(Object e) {
     debugPrint('[Register] error: $e');
     final msg = e.toString().toLowerCase();
     if (msg.contains('409') || msg.contains('already')) {
       return 'An account with this email already exists';
     }
     if (msg.contains('connection') || msg.contains('socket') ||
-        msg.contains('network')) {
+        msg.contains('network') || msg.contains('refused')) {
       return 'Cannot reach server — check your connection';
     }
     return 'Registration failed — please try again';

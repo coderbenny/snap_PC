@@ -65,6 +65,7 @@ class _AuthShellState extends ConsumerState<AuthShell> {
       onDragExited: (_) => setState(() => _dragging = false),
       onDragDone: _onFileDrop,
       child: Stack(
+        fit: StackFit.expand,
         children: [
           widget.child,
           if (_dragging) const _DropOverlay(),
@@ -81,46 +82,35 @@ class _DropOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Positioned.fill(
-      child: AnimatedOpacity(
-        opacity: 1,
-        duration: const Duration(milliseconds: 150),
-        child: Material(
-          color: cs.surface.withValues(alpha: 0.93),
-          child: Center(
+    return Material(
+      color: cs.surface.withValues(alpha: 0.93),
+      child: Center(
+        child: CustomPaint(
+          painter: _DashedBorderPainter(color: cs.onSurface.withValues(alpha: 0.25)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 44),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CustomPaint(
-                  painter: _DashedBorderPainter(color: cs.onSurface.withValues(alpha: 0.25)),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 44),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.upload_file_rounded,
-                          size: 52,
-                          color: cs.onSurface.withValues(alpha: 0.65),
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          'Drop to send',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: cs.onSurface.withValues(alpha: 0.85),
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: -0.3,
-                              ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Pick a device on the next screen',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: cs.onSurface.withValues(alpha: 0.45),
-                              ),
-                        ),
-                      ],
-                    ),
+                Icon(
+                  Icons.upload_file_rounded,
+                  size: 52,
+                  color: cs.onSurface.withValues(alpha: 0.65),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Drop to send',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.85),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Pick a device on the next screen',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.45),
                   ),
                 ),
               ],
