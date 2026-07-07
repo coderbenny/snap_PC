@@ -86,8 +86,13 @@ class SyncService {
 
   Future<void> _pull() async {
     int since = _prefs.getInt(AppConstants.kLastSyncCursor) ?? 0;
+    // Safety cap: prevents an infinite loop if the server cursor stops
+    // advancing (e.g. timestamp precision mismatch on the backend).
+    const maxPages = 100;
+    int page = 0;
 
-    while (true) {
+    while (page < maxPages) {
+      page++;
       final result = await _api.pullItems(
         since: since,
         limit: AppConstants.syncBatchSize,
@@ -97,10 +102,16 @@ class SyncService {
         await _db.insertClips(result.items);
       }
 
-      since = result.nextSince;
-      await _prefs.setInt(AppConstants.kLastSyncCursor, since);
+      if (!result.hasMore) {
+        await _prefs.setInt(AppConstants.kLastSyncCursor, result.nextSince);
+        break;
+      }
 
-      if (!result.hasMore) break;
+      // Guard: if the cursor didn't advance, nudge it forward by 1 ms so we
+      // don't refetch the same page indefinitely.
+      final nextSince = result.nextSince > since ? result.nextSince : since + 1;
+      await _prefs.setInt(AppConstants.kLastSyncCursor, nextSince);
+      since = nextSince;
     }
   }
 }

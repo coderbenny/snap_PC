@@ -36,6 +36,19 @@ class ClipsNotifier extends AsyncNotifier<List<ClipItem>> {
     );
   }
 
+  /// Remove all locally-cached clips that could not be decrypted.
+  /// Synced clips are re-fetched on the next pull; local-only clips that
+  /// can't be decrypted are unrecoverable and are deleted outright.
+  Future<void> removeUndecryptable() async {
+    state.whenData((clips) async {
+      final bad = clips.where((c) => c.plaintext == null).toList();
+      if (bad.isEmpty) return;
+      final db = ref.read(databaseServiceProvider);
+      await db.deleteByIds(bad.map((c) => c.id).toList());
+      state = AsyncData(clips.where((c) => c.plaintext != null).toList());
+    });
+  }
+
   Future<void> togglePin(String id) async {
     final db = ref.read(databaseServiceProvider);
     state.whenData((clips) {

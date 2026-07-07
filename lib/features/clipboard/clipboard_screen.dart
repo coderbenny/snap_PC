@@ -349,7 +349,7 @@ class _EmptyState extends StatelessWidget {
 
 // ── Decrypt failure banner ────────────────────────────────────────────────
 
-class _DecryptFailureBanner extends StatelessWidget {
+class _DecryptFailureBanner extends ConsumerWidget {
   final int failedCount;
   final int total;
 
@@ -357,33 +357,75 @@ class _DecryptFailureBanner extends StatelessWidget {
       {required this.failedCount, required this.total});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final allFailed = failedCount == total;
     final message = allFailed
-        ? 'None of your clips could be decrypted. Sign out and sign back in to re-enter your password.'
+        ? 'None of your clips could be decrypted — your encryption key may not match. Sign out and sign back in to re-enter your password.'
         : '$failedCount clip${failedCount == 1 ? '' : 's'} could not be decrypted. '
-            'They may have been saved by an older version of the app.';
+            'They may be from an older version of the app. Removing them is safe — synced clips will re-appear after the next sync.';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
       decoration: BoxDecoration(
-        color: Colors.amber.shade900.withValues(alpha: 0.25),
-        border: Border.all(color: Colors.amber.shade700.withValues(alpha: 0.5)),
+        color: Colors.amber.shade900.withValues(alpha: 0.2),
+        border: Border.all(color: Colors.amber.shade700.withValues(alpha: 0.4)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.warning_amber_rounded,
-              size: 16, color: Colors.amber.shade400),
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(Icons.warning_amber_rounded,
+                size: 15, color: Colors.amber.shade400),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
-                  fontSize: 12, color: Colors.amber.shade300),
+              style: TextStyle(fontSize: 12, color: Colors.amber.shade300),
             ),
           ),
+          if (!allFailed) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text('Remove old clips?'),
+                    content: Text(
+                      'This will delete $failedCount clip${failedCount == 1 ? '' : 's'} '
+                      'that cannot be decrypted. Clips that were synced from '
+                      'the server will reappear on the next sync.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Remove'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  ref.read(clipsProvider.notifier).removeUndecryptable();
+                }
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.amber.shade300,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                textStyle: const TextStyle(fontSize: 12),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('Remove'),
+            ),
+          ],
         ],
       ),
     );

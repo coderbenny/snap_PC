@@ -132,6 +132,15 @@ class DatabaseService {
     return result.first['c'] as int;
   }
 
+  Future<void> deleteByIds(List<String> ids) async {
+    if (ids.isEmpty) return;
+    final batch = _database.batch();
+    for (final id in ids) {
+      batch.delete('clips', where: 'id = ?', whereArgs: [id]);
+    }
+    await batch.commit(noResult: true);
+  }
+
   Future<void> clearAll() async {
     await _database.delete('clips');
   }
