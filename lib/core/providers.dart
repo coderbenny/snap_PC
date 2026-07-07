@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,6 +43,10 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((_) {
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient(ref.read(secureStorageProvider));
 });
+
+/// App appearance mode — persisted to SharedPreferences under 'theme_mode'.
+/// Defaults to ThemeMode.system. Override at startup with the stored value.
+final themeModeProvider = StateProvider<ThemeMode>((_) => ThemeMode.system);
 
 /// In-memory AES key (32 bytes). Null until the user logs in / unlocks.
 final encryptionKeyProvider = StateProvider<Uint8List?>((ref) => null);

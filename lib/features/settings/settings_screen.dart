@@ -312,10 +312,8 @@ class _AccountSection extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (plan != 'team') ...[
-                const SizedBox(height: 16),
-                _FileTransferAddonCard(active: fileTransferAddon),
-              ],
+              const SizedBox(height: 16),
+              _FileTransferAddonCard(active: fileTransferAddon),
             ],
           ],
         );
@@ -680,10 +678,60 @@ class _PreferencesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final syncEnabled = ref.watch(_syncEnabledProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Appearance',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              Text(
+                'Choose light, dark, or follow the system setting.',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 12),
+              SegmentedButton<ThemeMode>(
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  textStyle: const TextStyle(fontSize: 13),
+                ),
+                segments: const [
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    icon: Icon(Icons.brightness_auto_outlined, size: 16),
+                    label: Text('System'),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.light,
+                    icon: Icon(Icons.light_mode_outlined, size: 16),
+                    label: Text('Light'),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.dark,
+                    icon: Icon(Icons.dark_mode_outlined, size: 16),
+                    label: Text('Dark'),
+                  ),
+                ],
+                selected: {themeMode},
+                onSelectionChanged: (modes) async {
+                  final mode = modes.first;
+                  ref.read(themeModeProvider.notifier).state = mode;
+                  final prefs = ref.read(sharedPreferencesProvider);
+                  await prefs.setString('theme_mode', mode.name);
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         _Card(
           child: _ToggleRow(
             label: 'Enable sync',
@@ -953,50 +1001,16 @@ class _InfoRow extends StatelessWidget {
 
 // ── File-transfer addon card ───────────────────────────────────────────────
 
-class _FileTransferAddonCard extends ConsumerStatefulWidget {
+class _FileTransferAddonCard extends ConsumerWidget {
   final bool active;
   const _FileTransferAddonCard({required this.active});
 
   @override
-  ConsumerState<_FileTransferAddonCard> createState() =>
-      _FileTransferAddonCardState();
-}
-
-class _FileTransferAddonCardState
-    extends ConsumerState<_FileTransferAddonCard> {
-  bool _loading = false;
-
-  Future<void> _purchase() async {
-    setState(() => _loading = true);
-    try {
-      final api = ref.read(apiClientProvider);
-      final result = await api.purchaseFileTransferAddon();
-      final url = result['authorization_url'] as String?;
-      if (url != null && mounted) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start payment: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final addonPrices = ref.watch(addonPricesProvider);
     final ftInfo = addonPrices.valueOrNull?['file_transfer'];
-    final priceCents = ftInfo?['price_usd_cents'] as int? ?? 0;
     final description = ftInfo?['description'] as String? ??
         'Drag & drop files between your devices — server-relayed, nothing stored on disk.';
-    final priceLabel = priceCents > 0
-        ? '\$${(priceCents / 100).toStringAsFixed(2)}'
-        : '…';
-    final typeLabel = ftInfo?['type'] == 'one_time' ? 'one-time' : '';
 
     return _Card(
       child: Column(
@@ -1007,11 +1021,11 @@ class _FileTransferAddonCardState
               const Icon(Icons.share_rounded, size: 18),
               const SizedBox(width: 8),
               const Text(
-                'File Transfer Add-on',
+                'File Transfer',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const Spacer(),
-              if (widget.active)
+              if (active)
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1020,7 +1034,7 @@ class _FileTransferAddonCardState
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Active',
+                    'Included',
                     style: TextStyle(
                         fontSize: 11,
                         color: Colors.green.shade400,
@@ -1031,32 +1045,18 @@ class _FileTransferAddonCardState
           ),
           const SizedBox(height: 6),
           Text(
-            '$description${typeLabel.isNotEmpty && priceCents > 0 ? ' $priceLabel $typeLabel.' : ''}',
+            description,
             style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
-          if (!widget.active) ...[
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: (_loading || priceCents == 0) ? null : _purchase,
-              icon: _loading
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.add, size: 16),
-              label: Text(_loading
-                  ? 'Opening payment…'
-                  : priceCents > 0
-                      ? 'Add for $priceLabel'
-                      : 'Loading…'),
-              style: FilledButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  textStyle: const TextStyle(fontSize: 13)),
+          if (!active) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Included with any paid plan — upgrade to unlock.',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ],

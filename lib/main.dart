@@ -45,12 +45,21 @@ Future<void> main() async {
     await windowManager.focus();
   });
 
+  // Restore persisted appearance preference.
+  final storedTheme = prefs.getString('theme_mode');
+  final initialTheme = storedTheme == 'light'
+      ? ThemeMode.light
+      : storedTheme == 'dark'
+          ? ThemeMode.dark
+          : ThemeMode.system;
+
   runApp(
     ProviderScope(
       overrides: [
         databaseServiceProvider.overrideWithValue(db),
         sharedPreferencesProvider.overrideWithValue(prefs),
         initialRouteProvider.overrideWithValue(initialKey != null ? '/' : '/login'),
+        themeModeProvider.overrideWith((_) => initialTheme),
         if (initialKey != null)
           encryptionKeyProvider.overrideWith((_) => initialKey!),
       ],

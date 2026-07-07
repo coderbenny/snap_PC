@@ -57,10 +57,13 @@ class _SnapAppState extends ConsumerState<SnapApp> with WindowListener {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       title: 'Snapit',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
       routerConfig: router,
       builder: (context, child) => _AppFrame(child: child!),
     );
