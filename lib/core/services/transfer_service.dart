@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
@@ -136,10 +138,11 @@ class TransferService {
     );
 
     final downloadsDir = await _resolveDownloadsDir();
-    final destFile = File('${downloadsDir.path}/$fileName');
+    final destFile = _uniqueFile(downloadsDir, fileName);
 
     WebSocketChannel? channel;
     IOSink? sink;
+    String? serverError;
     try {
       channel = WebSocketChannel.connect(uri);
       sink = destFile.openWrite();
@@ -148,16 +151,27 @@ class TransferService {
 
       await for (final message in channel.stream) {
         if (message is String) {
-          // JSON error frame from server
-          onError?.call('Transfer error from server');
-          return null;
+          try {
+            final frame = jsonDecode(message) as Map<String, dynamic>;
+            serverError = frame['error'] as String? ?? 'Transfer error from server';
+          } catch (_) {
+            serverError = 'Transfer error from server';
+          }
+          break;
         }
-        final bytes = message as Uint8List;
+        final bytes = message is Uint8List
+            ? message
+            : Uint8List.fromList(message as List<int>);
         sink.add(bytes);
         bytesReceived += bytes.length;
         if (fileSize > 0) {
           onProgress?.call((bytesReceived / fileSize).clamp(0.0, 1.0));
         }
+      }
+
+      if (serverError != null) {
+        onError?.call(serverError!);
+        return null;
       }
 
       await sink.flush();
@@ -167,7 +181,24 @@ class TransferService {
       return null;
     } finally {
       await sink?.close();
+      if (serverError != null) {
+        try { await destFile.delete(); } catch (_) {}
+      }
       await channel?.sink.close();
+    }
+  }
+
+  File _uniqueFile(Directory dir, String fileName) {
+    var file = File('${dir.path}/$fileName');
+    if (!file.existsSync()) return file;
+    final dot = fileName.lastIndexOf('.');
+    final base = dot >= 0 ? fileName.substring(0, dot) : fileName;
+    final ext = dot >= 0 ? fileName.substring(dot) : '';
+    var i = 1;
+    while (true) {
+      file = File('${dir.path}/$base ($i)$ext');
+      if (!file.existsSync()) return file;
+      i++;
     }
   }
 
