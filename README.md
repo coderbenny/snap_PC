@@ -34,7 +34,31 @@
 
 ---
 
-## Quickstart
+## Installation
+
+### Homebrew (recommended for macOS)
+
+```bash
+brew tap coderbenny/tap
+brew install --cask snapit
+brew trust --cask coderbenny/tap/snapit
+```
+
+That's it — Snapit will appear in your Applications folder and the menu bar icon will be ready to use.
+
+> The `brew trust` step removes the macOS quarantine flag so the app opens without a security warning. Snapit is ad-hoc signed; this is expected behaviour for apps distributed outside the Mac App Store.
+
+### Download the DMG directly
+
+Grab the latest `.dmg` from the [Releases page](https://github.com/coderbenny/snap_PC/releases), open it, drag Snapit to Applications, then run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Snapit.app
+```
+
+---
+
+## Build from Source
 
 ### 1. Clone the monorepo
 
