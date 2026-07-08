@@ -25,6 +25,7 @@ class EventStreamService {
   StreamSubscription<String>? _lineSub;
   Timer? _reconnectTimer;
   bool _stopped = false;
+  String? _myDeviceId;
 
   // SSE parser state
   String? _currentEvent;
@@ -32,6 +33,7 @@ class EventStreamService {
 
   Future<void> start() async {
     _stopped = false;
+    _myDeviceId = await _storage.getOrCreateDeviceId();
     await _connect();
   }
 
@@ -115,6 +117,12 @@ class EventStreamService {
           final plan = map['plan'] as String?;
           if (plan != null) onPlanChanged?.call(plan);
         case 'transfer_incoming':
+          // Ignore events not targeted at this device — the server broadcasts
+          // to all SSE connections for the user, including the sender's own.
+          final targetId = map['target_device_id'] as String?;
+          if (targetId != null && _myDeviceId != null && targetId != _myDeviceId) {
+            break;
+          }
           onTransferIncoming?.call(map);
         case 'transfer_cancelled':
           final sessionId = map['session_id'] as String?;
