@@ -1,4 +1,4 @@
-# SNAP Desktop
+# Snapit Desktop
 
 ![Platform macOS](https://img.shields.io/badge/platform-macOS%2010.14%2B-lightgrey?logo=apple)
 ![Platform Windows](https://img.shields.io/badge/platform-Windows%2010%2B-blue?logo=windows)
@@ -6,7 +6,7 @@
 ![Dart SDK](https://img.shields.io/badge/Dart-%5E3.12.1-0175C2?logo=dart)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-**SNAP** is a universal clipboard vault for macOS and Windows. Every item you copy is captured automatically, encrypted locally with AES-256-GCM, and synced end-to-end encrypted to the SNAP backend so your clipboard history is available on every device you own.
+**Snapit** is a universal clipboard vault for macOS and Windows. Every item you copy is captured automatically, encrypted locally with AES-256-GCM, and synced end-to-end encrypted to the Snapit backend so your clipboard history is available on every device you own.
 
 ---
 
@@ -15,9 +15,9 @@
 - **Automatic capture** — watches the system clipboard in the background; every copied text, URL, or image is stored instantly.
 - **AES-256-GCM encryption** — all items are encrypted at rest before touching the local database. Keys are derived with PBKDF2-SHA256 at 600 000 iterations and stored in the OS keychain (macOS Keychain / Windows DPAPI).
 - **Full-text search (FTS5)** — find any clipping by keyword in milliseconds via SQLite FTS5.
-- **Cross-device sync** — end-to-end encrypted sync over HTTPS with the SNAP backend. Real-time plan-change events arrive via Server-Sent Events.
+- **Cross-device sync** — end-to-end encrypted sync over HTTPS with the Snapit backend. Real-time plan-change events arrive via Server-Sent Events.
 - **Quick-access overlay** — a global hotkey (default `⌘ Shift V` / `Ctrl Shift V`) opens a compact picker window without leaving your current app.
-- **System tray integration** — SNAP lives in the menu bar / notification area. Click the icon to open the main vault, right-click for options.
+- **System tray integration** — Snapit lives in the menu bar / notification area. Click the icon to open the main vault, right-click for options.
 - **Device registration & heartbeat** — devices are registered and kept alive so the server knows which devices are active.
 - **Offline-first** — the full local database is always available; sync runs on a 30-second timer and retries automatically when connectivity returns.
 
@@ -60,7 +60,7 @@ xattr -dr com.apple.quarantine /Applications/Snapit.app
 
 ## Build from Source
 
-### 1. Clone the monorepo
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/coderbenny/snap_PC
@@ -82,10 +82,10 @@ dart run build_runner build --delete-conflicting-outputs
 
 ### 4. Configure the backend URL
 
-Copy the environment template and set the API base URL to wherever the SNAP server is running (see [Backend Configuration](#backend-configuration)):
+Copy the environment template and set the API base URL to wherever the Snapit server is running (see [Backend Configuration](#backend-configuration)):
 
 ```bash
-# The app reads SNAP_API_URL from app_constants.dart; edit that file or
+# The app reads Snapit_API_URL from app_constants.dart; edit that file or
 # set the value before building.
 ```
 
@@ -115,7 +115,7 @@ flutter build windows --release
 
 ## Backend Configuration
 
-The desktop app connects to the SNAP backend defined in:
+The desktop app connects to the Snapit backend defined in:
 
 ```
 lib/core/constants/app_constants.dart
@@ -128,7 +128,7 @@ cd ../server
 # follow the server README to start the backend
 ```
 
-The default development URL is `http://localhost:3000`. For production, point it at your deployed server URL.
+The default development URL is `http://localhost:5559/snap`. For production, the app automatically uses `https://api.snapit.ink/snap`.
 
 ---
 
@@ -142,7 +142,7 @@ The default development URL is `http://localhost:3000`. For production, point it
 | Paste selected item | `Return` | `Enter` |
 | Close overlay | `Esc` | `Esc` |
 | Settings | `⌘ ,` | `Ctrl ,` |
-| Quit SNAP | Right-click tray → Quit | Right-click tray → Quit |
+| Quit Snapit | Right-click tray → Quit | Right-click tray → Quit |
 
 ---
 
@@ -190,15 +190,16 @@ pc/
 
 ## Related Repositories
 
-This desktop app is one part of the SNAP monorepo:
+Snapit is split across separate repositories:
 
-| Directory | Description |
+| Repo | Description |
 |---|---|
-| `pc/` | **This repo** — Flutter desktop app (macOS + Windows) |
-| `mobile/` | Flutter mobile app (iOS + Android) |
-| `server/` | SNAP backend — REST API, sync, auth, SSE event stream |
+| [snap_PC](https://github.com/coderbenny/snap_PC) | **This repo** — Flutter desktop app (macOS) |
+| [snap_mobile](https://github.com/coderbenny/snap_mobile) | Flutter Android app |
+| [snap_BE](https://github.com/coderbenny/snap_BE) | Flask REST API, SSE event stream, WebSocket file-transfer relay |
+| [snap_FE](https://github.com/coderbenny/snap_FE) | Next.js web dashboard and marketing site |
 
-All three share the same end-to-end encryption scheme. The server never sees plaintext clipboard data.
+All clients share the same end-to-end encryption scheme. The server never sees plaintext clipboard data.
 
 ---
 
