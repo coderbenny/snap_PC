@@ -67,12 +67,11 @@ class _TransferNotificationSheetState
       );
 
       if (!mounted) return;
-      ref.read(incomingTransferProvider.notifier).clear();
 
       if (file != null) {
         history.update(t.sessionId,
             status: TransferStatus.completed, progress: 1.0);
-        Navigator.of(context).pop();
+        // Show snackbar before clearing so ScaffoldMessenger still has context.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${t.fileName} saved to Downloads'),
@@ -80,6 +79,8 @@ class _TransferNotificationSheetState
           ),
         );
       }
+      // clear() → listenManual fires → Navigator.pop() — single dismiss path.
+      ref.read(incomingTransferProvider.notifier).clear();
     } catch (e) {
       history.update(t.sessionId,
           status: TransferStatus.failed, error: e.toString());
@@ -97,8 +98,8 @@ class _TransferNotificationSheetState
     try {
       await api.cancelTransfer(widget.transfer.sessionId);
     } catch (_) {}
+    // clear() → listenManual fires → Navigator.pop() — single dismiss path.
     ref.read(incomingTransferProvider.notifier).clear();
-    if (mounted) Navigator.of(context).pop();
   }
 
   // Also mark completed sends as done once device_picker pops with success.
