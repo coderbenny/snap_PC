@@ -39,8 +39,8 @@
 ### 1. Clone the monorepo
 
 ```bash
-git clone <repo-url> snap
-cd snap
+git clone https://github.com/coderbenny/snap_PC
+cd snap_PC
 ```
 
 ### 2. Install Flutter dependencies
