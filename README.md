@@ -46,7 +46,7 @@ cd snap_PC
 ### 2. Install Flutter dependencies
 
 ```bash
-cd pc
+cd snap_PC
 flutter pub get
 ```
 
