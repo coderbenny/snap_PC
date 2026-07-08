@@ -173,6 +173,10 @@ class ApiClient {
     await _dio.post('/auth/logout', data: {'refresh_token': refreshToken});
   }
 
+  Future<void> resendVerification(String email) async {
+    await _dio.post('/auth/resend-verification', data: {'email': email});
+  }
+
   // ── User ──────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> me() async {
