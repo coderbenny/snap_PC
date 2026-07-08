@@ -17,6 +17,7 @@ class EventStreamService {
   final SecureStorageService _storage;
 
   void Function(String newPlan)? onPlanChanged;
+  void Function()? onClipNew;
   void Function(Map<String, dynamic> payload)? onTransferIncoming;
   void Function(String sessionId)? onTransferCancelled;
 
@@ -116,6 +117,8 @@ class EventStreamService {
         case 'plan_changed':
           final plan = map['plan'] as String?;
           if (plan != null) onPlanChanged?.call(plan);
+        case 'clip_new':
+          onClipNew?.call();
         case 'transfer_incoming':
           // Ignore events not targeted at this device — the server broadcasts
           // to all SSE connections for the user, including the sender's own.

@@ -190,6 +190,8 @@ final eventStreamServiceProvider = Provider<EventStreamService>((ref) {
     storage: ref.read(secureStorageProvider),
   );
 
+  service.onClipNew = () => ref.read(syncServiceProvider).syncNow();
+
   service.onPlanChanged = (newPlan) {
     final currentPlan =
         ref.read(userProfileProvider).valueOrNull?['plan'] ?? 'free';
