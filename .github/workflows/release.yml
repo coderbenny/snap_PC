@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Build DMG
+        run: bash scripts/build_dmg.sh
+
+      - name: Get version and DMG path
+        id: meta
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          DMG="Snapit-${VERSION}.dmg"
+          SHA256=$(shasum -a 256 "$DMG" | awk '{print $1}')
+          echo "version=$VERSION"   >> $GITHUB_OUTPUT
+          echo "dmg=$DMG"           >> $GITHUB_OUTPUT
+          echo "sha256=$SHA256"     >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Snapit v${{ steps.meta.outputs.version }}
+          files: ${{ steps.meta.outputs.dmg }}
+          generate_release_notes: true
+
+      - name: Update Homebrew tap
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION:   ${{ steps.meta.outputs.version }}
+          SHA256:    ${{ steps.meta.outputs.sha256 }}
+        run: |
+          git clone \
+            https://x-access-token:${TAP_TOKEN}@github.com/coderbenny/homebrew-tap.git \
+            /tmp/homebrew-tap
+
+          cd /tmp/homebrew-tap
+
+          perl -i -pe 's/version "[^"]+"/version "'"$VERSION"'"/' Casks/snapit.rb
+          perl -i -pe 's/sha256 "[^"]+"/sha256 "'"$SHA256"'"/'   Casks/snapit.rb
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+          git add Casks/snapit.rb
+          git commit -m "chore: snapit → v${VERSION}"
+          git push
