@@ -21,7 +21,7 @@ class AppConstants {
   static const Duration transferTimeout = Duration(minutes: 10);
 
   // Encryption — must match the web client derivation
-  static const int pbkdf2Iterations = 600000;
+  static const int pbkdf2Iterations = 200000;
   static const String keySaltSuffix = ':snap-key-v1';
 
   // Sync

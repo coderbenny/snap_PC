@@ -38,6 +38,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _loading = false;
   String? _error;
 
+  String _loadingPhase = 'Signing in…';
+
   // Set when the server tells us the email is not yet verified.
   String? _unverifiedEmail;
   bool _resendLoading = false;
@@ -54,6 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() {
       _loading = true;
+      _loadingPhase = 'Signing in…';
       _error = null;
       _unverifiedEmail = null;
       _resendSent = false;
@@ -64,6 +67,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final tokens =
           await api.login(_emailCtrl.text.trim(), _passwordCtrl.text);
 
+      setState(() => _loadingPhase = 'Setting up encryption…');
       final key = await EncryptionService.deriveKeyAsync(
           _passwordCtrl.text, tokens.userId);
 
@@ -193,11 +197,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 FilledButton(
                   onPressed: _loading ? null : _submit,
                   child: _loading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(_loadingPhase),
+                          ],
                         )
                       : const Text('Sign in'),
                 ),
