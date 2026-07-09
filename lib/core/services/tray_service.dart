@@ -12,8 +12,8 @@ class TrayService with TrayListener, WindowListener {
     windowManager.addListener(this);
 
     await trayManager.setIcon(
-      Platform.isMacOS
-          ? 'assets/icons/tray_icon.png'
+      Platform.isWindows
+          ? 'assets/icons/app_icon.ico'
           : 'assets/icons/tray_icon.png',
     );
 

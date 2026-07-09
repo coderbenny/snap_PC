@@ -56,6 +56,15 @@ Grab the latest `.dmg` from the [Releases page](https://github.com/coderbenny/sn
 xattr -dr com.apple.quarantine /Applications/Snapit.app
 ```
 
+### Windows
+
+1. Download `Snapit-Windows-<version>.zip` from the [Releases page](https://github.com/coderbenny/snap_PC/releases).
+2. Extract the ZIP to a folder of your choice (e.g. `C:\Program Files\Snapit`).
+3. Run `snapit.exe` — Windows may show a SmartScreen prompt the first time; click **More info → Run anyway**.
+4. Snapit appears in the notification area (system tray). Right-click the icon to access all options.
+
+> **Optional shortcut:** Right-click `snapit.exe` → Send to → Desktop (create shortcut), then drag that shortcut into your Start Menu or Startup folder (`shell:startup`) so Snapit launches automatically on login.
+
 ---
 
 ## Build from Source
