@@ -13,7 +13,7 @@
 ## Features
 
 - **Automatic capture** — watches the system clipboard in the background; every copied text, URL, or image is stored instantly.
-- **AES-256-GCM encryption** — all items are encrypted at rest before touching the local database. Keys are derived with PBKDF2-SHA256 at 600 000 iterations and stored in the OS keychain (macOS Keychain / Windows DPAPI).
+- **AES-256-GCM encryption** — all items are encrypted at rest before touching the local database. Keys are derived with PBKDF2-SHA256 at 200 000 iterations and stored in the OS keychain (macOS Keychain / Windows DPAPI).
 - **Full-text search (FTS5)** — find any clipping by keyword in milliseconds via SQLite FTS5.
 - **Cross-device sync** — end-to-end encrypted sync over HTTPS with the Snapit backend. Real-time plan-change events arrive via Server-Sent Events.
 - **Quick-access overlay** — a global hotkey (default `⌘ Shift V` / `Ctrl Shift V`) opens a compact picker window without leaving your current app.
@@ -74,13 +74,7 @@ cd snap_PC
 flutter pub get
 ```
 
-### 3. Generate Riverpod code
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
-
-### 4. Configure the backend URL
+### 3. Configure the backend URL
 
 Copy the environment template and set the API base URL to wherever the Snapit server is running (see [Backend Configuration](#backend-configuration)):
 
@@ -89,13 +83,13 @@ Copy the environment template and set the API base URL to wherever the Snapit se
 # set the value before building.
 ```
 
-### 5. Run on macOS
+### 4. Run on macOS
 
 ```bash
 flutter run -d macos
 ```
 
-### 6. Run on Windows
+### 5. Run on Windows
 
 ```bash
 flutter run -d windows
