@@ -87,6 +87,28 @@ jobs:
       - name: Build Windows release
         run: flutter build windows --release
 
+      - name: Verify all plugin DLLs are present
+        shell: pwsh
+        run: |
+          $releaseDir = "build\windows\x64\runner\Release"
+          $required = @(
+            "clipboard_watcher_plugin.dll",
+            "desktop_drop_plugin.dll",
+            "flutter_windows.dll",
+            "tray_manager_plugin.dll",
+            "window_manager_plugin.dll"
+          )
+          $missing = @()
+          foreach ($dll in $required) {
+            if (-not (Test-Path "$releaseDir\$dll")) { $missing += $dll }
+          }
+          if ($missing.Count -gt 0) {
+            Write-Error "Missing DLLs in release folder: $($missing -join ', ')"
+            exit 1
+          }
+          Write-Host "All required DLLs present:"
+          Get-ChildItem "$releaseDir\*.dll" | Select-Object Name
+
       - name: Get version
         id: meta
         shell: pwsh
