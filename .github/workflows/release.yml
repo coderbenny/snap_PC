@@ -84,6 +84,18 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Remove jni from Windows FFI plugins
+        shell: pwsh
+        run: |
+          # jni is pulled in transitively via path_provider_android (Android-only).
+          # On CI, Java is installed so jni builds dartjni.dll which statically
+          # imports jvm.dll. End-user machines without Java cannot load that DLL,
+          # breaking the entire plugin loading chain. Remove it from the Windows build.
+          $file = "windows\flutter\generated_plugins.cmake"
+          (Get-Content $file) | Where-Object { $_ -notmatch '^\s+jni\s*$' } | Set-Content $file
+          Write-Host "generated_plugins.cmake after patch:"
+          Get-Content $file
+
       - name: Build Windows release
         run: flutter build windows --release
 
