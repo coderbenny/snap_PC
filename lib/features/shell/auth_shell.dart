@@ -29,6 +29,8 @@ class _AuthShellState extends ConsumerState<AuthShell> {
     // Must be done here (inside the Navigator) not in SnapApp.build.
     ref.listenManual<IncomingTransfer?>(incomingTransferProvider, (_, incoming) {
       if (incoming != null && mounted) {
+        windowManager.show();
+        windowManager.focus();
         showModalBottomSheet<void>(
           context: context,
           isDismissible: false,
