@@ -17,9 +17,12 @@ class ClipsNotifier extends AsyncNotifier<List<ClipItem>> {
     // Re-fetch from DB whenever the sync engine completes a pull.
     ref.watch(lastSyncProvider);
 
-    // Wire clipboard service → prepend new clips as they arrive.
+    // Wire clipboard service → prepend to UI and push to server immediately.
     final service = ref.read(clipboardServiceProvider);
-    service.onNewClip = _prepend;
+    service.onNewClip = (clip) {
+      _prepend(clip);
+      ref.read(syncServiceProvider).syncNow();
+    };
 
     final db = ref.read(databaseServiceProvider);
     final clips = await db.getClips(limit: 200);

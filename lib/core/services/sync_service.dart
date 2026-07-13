@@ -16,7 +16,6 @@ class SyncService {
 
   Timer? _timer;
   bool _syncing = false;
-  bool _upgradeRequired = false;
 
   void Function(SyncStatus status)? onStatusChange;
   void Function()? onSyncComplete;
@@ -29,13 +28,12 @@ class SyncService {
 
   bool get isSyncing => _syncing;
 
-  Future<void> start() async {
-    _upgradeRequired = false;
-    await syncNow();
-    // Don't start the timer if the first sync told us the plan doesn't include sync.
-    if (!_upgradeRequired) {
-      _timer ??= Timer.periodic(AppConstants.syncInterval, (_) => syncNow());
-    }
+  void start() {
+    // Fire first sync immediately without blocking — timer starts right away
+    // so the UI isn't stuck on "Syncing…" while the initial pull finishes.
+    // syncNow() calls stop() internally if the plan is free (403).
+    syncNow();
+    _timer ??= Timer.periodic(AppConstants.syncInterval, (_) => syncNow());
   }
 
   void stop() {
@@ -55,7 +53,6 @@ class SyncService {
       onSyncComplete?.call();
     } on DioException catch (e) {
       if (e.response?.statusCode == 403) {
-        _upgradeRequired = true;
         stop();
         onStatusChange?.call(SyncStatus.upgradeRequired);
       } else {
